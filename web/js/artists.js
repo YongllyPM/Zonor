@@ -1,6 +1,9 @@
 let currentArtistId = null;
 
 async function loadArtists() {
+  $('artistDetail').style.display = 'none';
+  $('artistsGrid').style.display = '';
+  currentArtistId = null;
   try {
     const artists = await pywebview.api.getArtists();
     const grid = $('artistsGrid');

@@ -2,6 +2,9 @@
 let currentPlaylistId = null;
 
 async function loadPlaylists() {
+  $('playlistsGrid').style.display = '';
+  $('playlistDetail').style.display = 'none';
+  currentPlaylistId = null;
   try {
     const playlists = await pywebview.api.getPlaylists();
     const grid = $('playlistsGrid');
