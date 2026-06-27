@@ -494,17 +494,29 @@
       </div>
       <div class="dialog-body">
         <div id="authPanel-quick" class="auth-panel">
-          <button class="btn-primary btn-full" onclick="loginBrowser()">Abrir YouTube Music en Firefox</button>
-          <ol class="auth-steps" style="text-align:left;margin:12px 0">
-            <li>Haz clic arriba e inicia sesión en YouTube Music</li>
-            <li>Presiona <strong>F12</strong> → pestaña <strong>Red</strong></li>
-            <li>Escribe <code>youtubei</code> en el filtro y recarga la página</li>
-            <li>Click derecho en una fila → Copiar → <strong>Copiar como cURL</strong></li>
-            <li>Pega abajo y haz clic en <strong>Conectar</strong></li>
-          </ol>
-          <textarea id="quickCurlInput" class="input-area" rows="4" placeholder="Pega aquí el cURL (Ctrl+V)"></textarea>
-          <button class="btn-primary btn-full" onclick="loginWithQuickCurl()">Conectar</button>
-          <p class="text-muted" style="margin-top:6px;font-size:12px">¿Problemas? Usa la pestaña <strong>Avanzado</strong>.</p>
+          <p class="text-muted">Zonor leerá automáticamente tu sesión de YouTube Music desde Chrome, Firefox, Edge o Brave.</p>
+          <button class="btn-primary btn-full" id="loginBrowserBtn" onclick="loginBrowser()">
+            Iniciar sesión automáticamente
+          </button>
+          <div id="quickManualFallback" style="display:none;margin-top:12px">
+            <hr>
+            <p class="text-muted" style="font-size:12px">No se encontró sesión. Abre YouTube Music en tu navegador, inicia sesión y vuelve a intentar.</p>
+            <button class="btn-primary btn-full" onclick="loginBrowser()" style="font-size:13px">
+              Reintentar lectura automática
+            </button>
+            <details style="margin-top:8px">
+              <summary style="font-size:12px;cursor:pointer">O pegar cURL manualmente</summary>
+              <ol class="auth-steps" style="text-align:left;margin:12px 0;font-size:12px">
+                <li>Abre YouTube Music en Firefox e inicia sesión</li>
+                <li><strong>F12</strong> → pestaña <strong>Red</strong></li>
+                <li>Escribe <code>youtubei</code> en el filtro y recarga</li>
+                <li>Click derecho en una fila → Copiar → <strong>Copiar como cURL</strong></li>
+                <li>Pega abajo</li>
+              </ol>
+              <textarea id="quickCurlInput" class="input-area" rows="4" placeholder="Pega aquí el cURL (Ctrl+V)"></textarea>
+              <button class="btn-primary btn-full" onclick="loginWithQuickCurl()">Conectar con cURL</button>
+            </details>
+          </div>
         </div>
         <div id="authPanel-saved" class="auth-panel" style="display:none">
           <p class="text-muted">Si ya iniciaste sesión antes, reconecta con un clic.</p>

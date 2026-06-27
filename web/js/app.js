@@ -62,7 +62,8 @@ function switchAuthTab(tab) {
 
 async function loginBrowser() {
   const btn = $('loginBrowserBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Abriendo navegador...'; }
+  const fallback = $('quickManualFallback');
+  if (btn) { btn.disabled = true; btn.textContent = 'Leyendo sesión del navegador...'; }
   try {
     const result = await pywebview.api.loginFromBrowser();
     if (result === true || result?.success) {
@@ -70,12 +71,15 @@ async function loginBrowser() {
       showToast('Sesión iniciada correctamente', 'success');
       closeDialog(null, 'authDialog');
       loadHome();
+    } else if (result?.open_browser) {
+      if (fallback) fallback.style.display = 'block';
+      showToast(result.message || 'Abre YouTube Music e inicia sesión', 'info');
     } else {
-      showToast('Se abrió YouTube Music. Inicia sesión y pega el cURL abajo.', 'info');
+      showToast(result?.error || 'No se pudo iniciar sesión', 'error');
     }
   } catch (e) { showToast('Error: ' + e, 'error'); }
   finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Abrir YouTube Music en Firefox'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión automáticamente'; }
   }
 }
 

@@ -10,6 +10,12 @@ from ytmusicapi import YTMusic
 
 logger = logging.getLogger('zonor.auth')
 
+try:
+    import browser_cookie3
+    HAS_BROWSER_COOKIE = True
+except ImportError:
+    HAS_BROWSER_COOKIE = False
+
 
 class YTMusicHandler:
     def __init__(self, on_auth_change=None):
@@ -175,6 +181,58 @@ class YTMusicHandler:
             self.auth_error = str(e)
             return False
 
+    def _build_cookie_string(self, cookies):
+        seen = set()
+        parts = []
+        for c in cookies:
+            if c.name in seen:
+                continue
+            seen.add(c.name)
+            parts.append(f"{c.name}={c.value}")
+        return '; '.join(parts)
+
+    def _extract_cookies_from_browsers(self):
+        if not HAS_BROWSER_COOKIE:
+            logger.warning("browser-cookie3 no instalado")
+            return None
+        domains = ['.youtube.com', 'music.youtube.com', '.google.com']
+        browsers = []
+        for loader_name in ['chrome', 'brave', 'edge', 'opera', 'opera_gx', 'firefox']:
+            try:
+                loader = getattr(browser_cookie3, loader_name, None)
+                if loader:
+                    browsers.append((loader_name, loader))
+            except Exception:
+                pass
+        for name, loader in browsers:
+            try:
+                all_cookies = []
+                for domain in domains:
+                    try:
+                        all_cookies.extend(loader(domain_name=domain))
+                    except Exception:
+                        pass
+                if not all_cookies:
+                    continue
+                cookie_str = self._build_cookie_string(all_cookies)
+                if not cookie_str:
+                    continue
+                headers = {
+                    'Cookie': cookie_str,
+                    'x-goog-authuser': '0',
+                    'x-origin': 'https://music.youtube.com',
+                    'Accept': '*/*',
+                    'Content-Type': 'application/json',
+                }
+                self._save_headers_file(headers_dict=headers)
+                if self._activate_session():
+                    logger.info(f"Login automático desde {name}")
+                    return True
+            except Exception as e:
+                logger.warning(f"Error con {name}: {e}")
+                continue
+        return False
+
     def login_from_browser(self):
         try:
             self._headers_file.parent.mkdir(parents=True, exist_ok=True)
@@ -183,10 +241,15 @@ class YTMusicHandler:
                     self.on_auth_change(True, self.user_info)
                 return {'success': True, 'user': self.user_info}
 
+            if self._extract_cookies_from_browsers():
+                if self.on_auth_change:
+                    self.on_auth_change(True, self.user_info)
+                return {'success': True, 'user': self.user_info}
+
             webbrowser.open('https://music.youtube.com')
             self.auth_error = (
-                'Se abrió music.youtube.com. Inicia sesión, copia los headers '
-                '(pestaña Avanzado) o pega solo la cookie.'
+                'No se encontró sesión en tus navegadores. '
+                'Abre YouTube Music e inicia sesión. Luego vuelve y dale clic en "Conectar".'
             )
             return {
                 'success': False,
