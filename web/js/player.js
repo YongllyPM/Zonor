@@ -417,11 +417,15 @@ audio.addEventListener('error', async () => {
 
 audio.addEventListener('loadedmetadata', () => {
   playerStatus.duration = audio.duration || 0;
+  const dur = Math.floor(audio.duration || 0);
   const tt = $('totalTime');
   const mtt = $('miniTotalTime');
-  const t = formatTime(audio.duration || 0);
+  const t = formatTime(dur);
   if (tt) tt.textContent = t;
   if (mtt) mtt.textContent = t;
+  if (currentSong && dur > 0) {
+    pywebview.api.updateSongDuration(currentSong.id, dur).catch(() => {});
+  }
 });
 
 function updatePlayButtons(playing) {

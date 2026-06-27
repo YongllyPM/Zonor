@@ -222,6 +222,14 @@ class API:
         return self.ytmusic.get_artist_albums(channel_id)
 
     def get_liked_songs(self):
+        return db.get_liked_songs()
+
+    def update_song_duration(self, song_id, duration):
+        song = db.get_song(song_id)
+        if song:
+            db.save_song({**song, 'duration': int(duration)})
+            return {'ok': True}
+        return {'ok': False}
 
     def is_liked(self, song_id):
         return db.is_liked(song_id)

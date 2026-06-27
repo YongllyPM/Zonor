@@ -689,10 +689,16 @@ class YTMusicHandler:
         secs = item.get('duration_seconds')
         if isinstance(secs, (int, float)):
             return int(secs)
+        length = item.get('lengthSeconds')
+        if isinstance(length, (int, float)):
+            return int(length)
         if isinstance(raw, str) and ':' in raw:
             parts = raw.split(':')
             try:
-                return int(parts[0]) * 60 + int(parts[1])
+                if len(parts) == 2:
+                    return int(parts[0]) * 60 + int(parts[1])
+                elif len(parts) == 3:
+                    return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
             except:
                 pass
         return 0
