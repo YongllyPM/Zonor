@@ -46,6 +46,18 @@ async function forceSync() {
   } catch(e) { showToast('Error de sincronización', 'error'); }
 }
 
+async function fixSync() {
+  try {
+    const result = await pywebview.api.fixSync();
+    if (result?.success) {
+      showToast(result.message || 'Reparación completada');
+      if (result.deleted > 0) loadPlaylists();
+    } else {
+      showToast(result?.error || 'Error al reparar', 'error');
+    }
+  } catch(e) { showToast('Error al reparar sincronización', 'error'); }
+}
+
 async function saveAllSettings() {
   const settings = {
     volume: parseInt($('defaultVolume').value),

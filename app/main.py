@@ -148,6 +148,9 @@ class JSAPI:
     def forceSync(self):
         return self._api.force_sync()
 
+    def fixSync(self):
+        return self._api.fix_sync()
+
     def getAllSongs(self):
         return self._api.get_all_songs()
 

@@ -182,12 +182,15 @@ def delete_playlist(playlist_id):
 
 def cleanup_orphan_playlists():
     conn = get_conn()
-    conn.execute("""DELETE FROM playlists WHERE id LIKE 'home_%' AND sync_id = ''""")
-    conn.execute("""DELETE FROM playlists WHERE id NOT LIKE 'local_%' AND sync_id = '' AND id NOT IN (
+    deleted = 0
+    deleted += conn.execute("""DELETE FROM playlists WHERE id LIKE 'home_%' AND sync_id = ''""").rowcount
+    deleted += conn.execute("""DELETE FROM playlists WHERE id NOT LIKE 'local_%' AND sync_id = '' AND id NOT IN (
         SELECT playlist_id FROM playlist_songs
-    )""")
+    )""").rowcount
+    conn.execute("""DELETE FROM playlist_songs WHERE playlist_id NOT IN (SELECT id FROM playlists)""")
     conn.commit()
     conn.close()
+    return deleted
 
 
 def get_playlists():

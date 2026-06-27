@@ -481,6 +481,19 @@ class API:
     def force_sync(self):
         return self.sync_service.force_sync()
 
+    def fix_sync(self):
+        try:
+            deleted = db.cleanup_orphan_playlists()
+            if self.ytmusic.is_authenticated():
+                self.sync_service.force_sync()
+            return {
+                'success': True,
+                'message': f'Reparación completada. Playlists limpiadas: {deleted or 0}',
+                'deleted': deleted or 0
+            }
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
     def set_sync_interval(self, interval):
         self.sync_service._sync_interval = interval
 
