@@ -48,14 +48,14 @@ function renderLyrics(lyricsData) {
     const t = parseFloat(el.dataset.time);
     if (t >= 0) {
       el.onclick = () => {
-        audio.currentTime = t;
+        activeAudio.currentTime = t;
         pywebview.api.seek(t);
         updateLyricsDisplay(t);
       };
     }
   });
 
-  if (isSynced) updateLyricsDisplay(audio.currentTime || 0);
+  if (isSynced) updateLyricsDisplay(activeAudio.currentTime || 0);
 }
 
 function updateLyricsDisplay(position) {

@@ -134,10 +134,29 @@ begin
     Result := PythonPath + 'pythonw.exe'; exit;
   end;
 
-  // Check from registry
-  if RegQueryStringValue(HKLM64, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) or
-     RegQueryStringValue(HKLM32, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) or
-     RegQueryStringValue(HKCU, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) then
+  // Check from registry (exact versions, no wildcards)
+  PythonPath := '';
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\Python\PythonCore\3.13\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Python\PythonCore\3.13\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKCU, 'SOFTWARE\Python\PythonCore\3.13\InstallPath', '', PythonPath) then
+  begin
+    if FileExists(PythonPath + 'pythonw.exe') then begin
+      Result := PythonPath + 'pythonw.exe'; exit;
+    end;
+  end;
+  PythonPath := '';
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\Python\PythonCore\3.12\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Python\PythonCore\3.12\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKCU, 'SOFTWARE\Python\PythonCore\3.12\InstallPath', '', PythonPath) then
+  begin
+    if FileExists(PythonPath + 'pythonw.exe') then begin
+      Result := PythonPath + 'pythonw.exe'; exit;
+    end;
+  end;
+  PythonPath := '';
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\Python\PythonCore\3.11\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Python\PythonCore\3.11\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKCU, 'SOFTWARE\Python\PythonCore\3.11\InstallPath', '', PythonPath) then
   begin
     if FileExists(PythonPath + 'pythonw.exe') then begin
       Result := PythonPath + 'pythonw.exe'; exit;
@@ -154,26 +173,29 @@ begin
     Result := PythonPath + 'pythonw.exe'; exit;
   end;
 
-  // Fallback: just use PATH
+  // Try to find via PATH (where command)
+  if Exec('where', 'pythonw.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+  begin
+    // where succeeded but we don't capture output easily.
+    // Let PATH handle it at runtime.
+  end;
+
+  // Fallback: let Windows resolve via PATH
   Result := 'pythonw.exe';
 end;
 
 function InitializeSetup: Boolean;
 begin
   Result := True;
-
-  // Just check Python exists, don't capture version to avoid stdout issues
-  if not FileExists(AddBackslash(ExtractFilePath(FindPythonw())) + 'pythonw.exe') then
+  PythonwPath := FindPythonw();
+  if PythonwPath = 'pythonw.exe' then
   begin
-    MsgBox('No se encontro Python 3.' + #13#10#13#10 +
-           'Descarga Python 3.11+ desde python.org e instala con "Add to PATH".' + #13#10 +
-           'O puedes instalarlo desde Microsoft Store.' + #13#10#13#10 +
-           'La instalacion continuara de todas formas.',
+    MsgBox('No se encontro Python 3 en las ubicaciones habituales.' + #13#10#13#10 +
+           'Si Python 3.11+ esta instalado pero no se detecto,' + #13#10 +
+           'el acceso directo usara pythonw.exe desde PATH.' + #13#10#13#10 +
+           'Descarga: https://www.python.org/downloads/',
            mbInformation, MB_OK);
   end;
-
-  // Find pythonw.exe
-  PythonwPath := FindPythonw();
 end;
 
 function GetCustomSetupExitCode: Integer;

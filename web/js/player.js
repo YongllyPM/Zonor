@@ -22,8 +22,12 @@ let isCrossfading = false;
 const EQ_FREQS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 16000];
 
 function initAudioContext() {
-  if (audioCtx) return;
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   const srcA = audioCtx.createMediaElementSource(audioA);
   const srcB = audioCtx.createMediaElementSource(audioB);
   eqFilters = [];
@@ -104,6 +108,7 @@ async function crossfadeToSong(index) {
     const startVol = Math.max(0.01, current.volume);
     const targetVol = startVol;
     next.volume = 0.01;
+    activeAudio = next;
     if (next.paused) await next.play();
     const fadeSteps = 20;
     const stepTime = (crossfadeDuration * 1000) / fadeSteps;
@@ -118,7 +123,6 @@ async function crossfadeToSong(index) {
           clearInterval(fade);
           current.pause();
           current.src = '';
-          activeAudio = next;
           isCrossfading = false;
           resolve(true);
         }

@@ -309,6 +309,28 @@ def clear_all():
     conn.close()
 
 
+def factory_reset_db():
+    conn = get_conn()
+    conn.execute("PRAGMA busy_timeout=5000")
+    conn.execute("DELETE FROM songs")
+    conn.execute("DELETE FROM playlists")
+    conn.execute("DELETE FROM playlist_songs")
+    conn.execute("DELETE FROM download_queue")
+    conn.execute("DELETE FROM play_history")
+    conn.execute("DELETE FROM cache")
+    conn.execute("DELETE FROM settings")
+    conn.commit()
+    conn.close()
+
+def clear_playlist_data():
+    conn = get_conn()
+    conn.execute("DELETE FROM songs")
+    conn.execute("DELETE FROM playlists")
+    conn.execute("DELETE FROM playlist_songs")
+    conn.execute("DELETE FROM recent_plays")
+    conn.commit()
+    conn.close()
+
 def cache_clear():
     conn = get_conn()
     conn.execute("DELETE FROM cache")

@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (settings.volume) {
       document.querySelectorAll('.volume-slider').forEach(s => s.value = settings.volume);
       $('volVal').textContent = settings.volume;
-      audio.volume = settings.volume / 100;
+      setVolume(parseInt(settings.volume));
     }
   } catch(e) {}
   try {

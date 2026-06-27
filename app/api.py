@@ -162,6 +162,8 @@ class API:
 
     def logout(self):
         self.ytmusic.logout()
+        db.clear_playlist_data()
+        db.cache_clear()
 
     def factoryReset(self):
         try:
@@ -171,10 +173,13 @@ class API:
                 for f in Path(dl_dir).iterdir():
                     if f.is_file():
                         f.unlink()
-            self.logout()
-            db.clear_all()
-            db.cache_clear()
-            self.player.stop()
+            db.factory_reset_db()
+            self.ytmusic.logout()
+            self.player.current_song = None
+            self.player.state = 'stopped'
+            self.player.position = 0
+            self.player.duration = 0
+            self.player.invalidate_stream_cache()
             self.current_queue = []
             self.queue_index = -1
             self.current_playing_id = None

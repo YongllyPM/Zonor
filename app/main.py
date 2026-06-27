@@ -187,6 +187,9 @@ class JSAPI:
     def downloadAllLiked(self):
         return self._api.download_all_liked()
 
+    def factoryReset(self):
+        return self._api.factoryReset()
+
 
 def main():
     global api

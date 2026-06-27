@@ -15,7 +15,7 @@ echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Paso 1/5: Verificando Python...
+echo  Paso 1/6: Verificando Python...
 echo.
 
 python --version >nul 2>nul
@@ -41,7 +41,7 @@ echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Paso 2/5: Instalando dependencias Python...
+echo  Paso 2/6: Instalando dependencias Python...
 echo.
 echo  Paquetes: pywebview, ytmusicapi, yt-dlp, Pillow, requests, syncedlyrics, browser-cookie3
 echo.
@@ -73,14 +73,14 @@ echo  ======================== 100%%
 echo.
 timeout /t 1 /nobreak >nul 2>&1
 
-:: ===== PASO 2.5: Icono =====
+:: ===== PASO 3: Icono =====
 cls
 echo.
 echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Generando icono multi-tamano...
+echo  Paso 3/6: Generando icono multi-tamano...
 echo.
 
 if exist "%ROOT%\zonor.ico" (
@@ -102,14 +102,14 @@ echo  ======================== 100%%
 echo.
 timeout /t 1 /nobreak >nul 2>&1
 
-:: ===== PASO 3: yt-dlp =====
+:: ===== PASO 4: yt-dlp =====
 cls
 echo.
 echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Paso 3/5: Descargando yt-dlp...
+echo  Paso 4/6: Descargando yt-dlp...
 echo.
 
 if exist "%BIN_DIR%\yt-dlp.exe" (
@@ -131,14 +131,14 @@ echo  ======================== 100%%
 echo.
 timeout /t 1 /nobreak >nul 2>&1
 
-:: ===== PASO 4: Verificacion =====
+:: ===== PASO 5: Verificacion =====
 cls
 echo.
 echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Paso 4/5: Verificando instalacion...
+echo  Paso 5/6: Verificando instalacion...
 echo.
 
 python -c "import webview" >nul 2>&1 && echo  [OK] pywebview     || echo  [FAIL] pywebview
@@ -154,14 +154,14 @@ echo  ======================== 100%%
 echo.
 timeout /t 1 /nobreak >nul 2>&1
 
-:: ===== PASO 5: Shortcut y lanzador =====
+:: ===== PASO 6: Shortcut y lanzador =====
 cls
 echo.
 echo  ============================================================
 echo    Zonor - Instalacion automatica
 echo  ============================================================
 echo.
-echo  Paso 5/5: Creando acceso directo en el Escritorio...
+echo  Paso 6/6: Creando acceso directo en el Escritorio...
 echo.
 
 :: Eliminar lanzador VBS antiguo (ya no se usa)
