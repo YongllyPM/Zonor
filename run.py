@@ -25,6 +25,13 @@ if sys.platform == 'win32':
 _LOG = Path(os.environ.get('APPDATA', '')) / 'Zonor' / 'error.log'
 _LOG.parent.mkdir(parents=True, exist_ok=True)
 
+import logging
+logging.basicConfig(
+    filename=str(_LOG),
+    level=logging.ERROR,
+    format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+)
+
 # Ensure app directory is in path
 sys.path.insert(0, str(Path(__file__).parent))
 

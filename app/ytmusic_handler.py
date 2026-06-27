@@ -1,11 +1,14 @@
 import os
 import json
+import logging
 import re
 import webbrowser
 from pathlib import Path
 
 import ytmusicapi
 from ytmusicapi import YTMusic
+
+logger = logging.getLogger('zonor.auth')
 
 
 class YTMusicHandler:
@@ -96,14 +99,19 @@ class YTMusicHandler:
             raise ValueError('No headers provided')
 
     def _activate_session(self):
-        self.yt = YTMusic(str(self._headers_file))
-        account = self.yt.get_account_info()
-        self.authenticated = True
-        self.user_info = account
-        self.auth_error = None
-        if self.on_auth_change:
-            self.on_auth_change(True, self.user_info)
-        return True
+        try:
+            self.yt = YTMusic(str(self._headers_file))
+            account = self.yt.get_account_info()
+            self.authenticated = True
+            self.user_info = account
+            self.auth_error = None
+            if self.on_auth_change:
+                self.on_auth_change(True, self.user_info)
+            return True
+        except Exception as e:
+            logger.error(f"Session activation failed: {e}")
+            self.auth_error = str(e)
+            return False
 
     def login_with_cookie(self, cookie_string):
         cookie = cookie_string.strip()
@@ -135,18 +143,10 @@ class YTMusicHandler:
             else:
                 self._save_headers_file(headers_dict=headers_input)
 
-            try:
-                return self._activate_session()
-            except Exception:
-                self.authenticated = True
-                self.user_info = {'name': 'Usuario YT Music'}
-                self.auth_error = None
-                if self.on_auth_change:
-                    self.on_auth_change(True, self.user_info)
-                return True
+            return self._activate_session()
         except Exception as e:
+            logger.error(f"Auth error: {e}")
             self.auth_error = str(e)
-            print(f"Auth error: {e}")
             return False
 
     def login_from_browser(self):
