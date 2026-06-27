@@ -209,7 +209,8 @@ async function playPlaylist(playlistId, startIndex) {
     currentQueue = songs;
     currentQueueIndex = startIndex;
     if (shuffleOn) buildShuffleOrder();
-    return playSong(songs[startIndex].id);
+    await pywebview.api.playSong(songs[startIndex].id);
+    return playAtIndex(startIndex);
   } catch (e) { showToast('Error', 'error'); }
 }
 

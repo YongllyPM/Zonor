@@ -328,7 +328,8 @@ async function playHomePlaylist(playlistId) {
     currentQueue = songs;
     currentQueueIndex = 0;
     if (shuffleOn) buildShuffleOrder();
-    playSong(songs[0].id);
+    await pywebview.api.playSong(songs[0].id);
+    return playAtIndex(0);
   } catch (e) { showToast('No se pudo abrir la playlist', 'error'); }
 }
 
