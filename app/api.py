@@ -234,18 +234,20 @@ class API:
         return self.get_stream_url(song_id)
 
     def get_playlists(self):
-        local = db.get_playlists()
+        local = [p for p in db.get_playlists() if not p['id'].startswith('home_')]
         if self.ytmusic.is_authenticated():
             remote = self.ytmusic.get_playlists()
-            remote_ids = {r['id'] for r in remote}
             for r in remote:
-                found = False
-                for l in local:
-                    if l.get('sync_id') == r['id']:
-                        found = True
-                        break
+                found = any(l.get('sync_id') == r['id'] for l in local)
                 if not found:
                     pl_id = f"sync_{r['id']}"
+                    db.save_playlist({
+                        'id': pl_id,
+                        'name': r['name'],
+                        'description': r.get('description', ''),
+                        'thumbnail': r.get('thumbnail', ''),
+                        'sync_id': r['id']
+                    })
                     local.append({
                         'id': pl_id,
                         'name': r['name'],
@@ -253,7 +255,6 @@ class API:
                         'thumbnail': r.get('thumbnail', ''),
                         'song_count': r.get('song_count', 0),
                         'sync_id': r['id'],
-                        'is_remote': True
                     })
         return local
 

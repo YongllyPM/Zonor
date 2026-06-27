@@ -38,6 +38,10 @@ class SyncService:
             local_playlists = db.get_playlists()
 
             local_by_sync = {p['sync_id']: p for p in local_playlists if p.get('sync_id')}
+            local_by_home_id = {}
+            for p in local_playlists:
+                if p['id'].startswith('home_'):
+                    local_by_home_id[p['id'][5:]] = p
             remote_by_id = {p['id']: p for p in remote_playlists}
 
             for rp in remote_playlists:
@@ -55,14 +59,25 @@ class SyncService:
                         self._sync_playlist_songs(lp['id'], remote_songs)
                         self._emit('playlist_updated', {'playlist_id': lp['id']})
                 else:
-                    pl_id = f"sync_{rp['id']}"
-                    db.save_playlist({
-                        'id': pl_id,
-                        'name': rp['name'],
-                        'description': rp.get('description', ''),
-                        'thumbnail': rp.get('thumbnail', ''),
-                        'sync_id': rp['id']
-                    })
+                    if rp['id'] in local_by_home_id:
+                        existing_id = local_by_home_id[rp['id']]
+                        db.save_playlist({
+                            'id': existing_id,
+                            'name': rp['name'],
+                            'description': rp.get('description', ''),
+                            'thumbnail': rp.get('thumbnail', ''),
+                            'sync_id': rp['id']
+                        })
+                        pl_id = existing_id
+                    else:
+                        pl_id = f"sync_{rp['id']}"
+                        db.save_playlist({
+                            'id': pl_id,
+                            'name': rp['name'],
+                            'description': rp.get('description', ''),
+                            'thumbnail': rp.get('thumbnail', ''),
+                            'sync_id': rp['id']
+                        })
                     remote_songs = self.ytmusic.get_playlist(rp['id'])
                     for song in remote_songs:
                         db.save_song(song)
@@ -73,6 +88,8 @@ class SyncService:
                 if lp.get('sync_id') and lp['sync_id'] not in remote_by_id:
                     db.delete_playlist(lp['id'])
                     self._emit('playlist_removed', {'playlist_id': lp['id']})
+
+            db.cleanup_orphan_playlists()
 
         except Exception as e:
             print(f"Playlist sync error: {e}")
