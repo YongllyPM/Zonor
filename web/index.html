@@ -494,10 +494,17 @@
       </div>
       <div class="dialog-body">
         <div id="authPanel-quick" class="auth-panel">
-          <p class="text-muted">Paso 1: abre YouTube Music e inicia sesión.<br>Paso 2: en la pestaña <strong>Avanzado</strong> pega tu cookie o headers.</p>
-          <button class="btn-primary btn-full" id="loginBrowserBtn" onclick="loginBrowser()">Abrir YouTube Music</button>
-          <p class="text-muted" style="margin-top:12px;font-size:12px">OAuth solo si tienes client_id/secret de Google Cloud (opcional).</p>
-          <button class="btn-text btn-full" onclick="loginOAuth()">Intentar OAuth (avanzado)</button>
+          <button class="btn-primary btn-full" onclick="loginBrowser()">Abrir YouTube Music en Firefox</button>
+          <ol class="auth-steps" style="text-align:left;margin:12px 0">
+            <li>Haz clic arriba e inicia sesión en YouTube Music</li>
+            <li>Presiona <strong>F12</strong> → pestaña <strong>Red</strong></li>
+            <li>Escribe <code>youtubei</code> en el filtro y recarga la página</li>
+            <li>Click derecho en una fila → Copiar → <strong>Copiar como cURL</strong></li>
+            <li>Pega abajo y haz clic en <strong>Conectar</strong></li>
+          </ol>
+          <textarea id="quickCurlInput" class="input-area" rows="4" placeholder="Pega aquí el cURL (Ctrl+V)"></textarea>
+          <button class="btn-primary btn-full" onclick="loginWithQuickCurl()">Conectar</button>
+          <p class="text-muted" style="margin-top:6px;font-size:12px">¿Problemas? Usa la pestaña <strong>Avanzado</strong>.</p>
         </div>
         <div id="authPanel-saved" class="auth-panel" style="display:none">
           <p class="text-muted">Si ya iniciaste sesión antes, reconecta con un clic.</p>

@@ -70,16 +70,12 @@ async function loginBrowser() {
       showToast('Sesión iniciada correctamente', 'success');
       closeDialog(null, 'authDialog');
       loadHome();
-    } else if (result?.open_browser) {
-      switchAuthTab('advanced');
-      showToast(result.message || 'Inicia sesión y pega tu cookie en Avanzado', 'info');
     } else {
-      const status = await pywebview.api.getAuthStatus();
-      showToast(result?.error || status.error || 'No se pudo iniciar sesión', 'error');
+      showToast('Se abrió YouTube Music. Inicia sesión y pega el cURL abajo.', 'info');
     }
   } catch (e) { showToast('Error: ' + e, 'error'); }
   finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Abrir YouTube Music e iniciar sesión'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Abrir YouTube Music en Firefox'; }
   }
 }
 
@@ -110,6 +106,23 @@ async function loginOAuth() {
       showToast(status.error || result?.error || 'OAuth no disponible. Usa cookie o headers.', 'error');
     }
   } catch (e) { showToast('OAuth no disponible. Usa cookie o headers.', 'error'); }
+}
+
+async function loginWithQuickCurl() {
+  const raw = $('quickCurlInput')?.value.trim();
+  if (!raw) { showToast('Pega el cURL de Firefox primero', 'error'); return; }
+  try {
+    const result = await pywebview.api.loginWithHeaders(raw);
+    if (result) {
+      await updateAuthUI();
+      showToast('Sesión iniciada correctamente', 'success');
+      closeDialog(null, 'authDialog');
+      loadHome();
+    } else {
+      const status = await pywebview.api.getAuthStatus();
+      showToast(status.error || 'Error al iniciar sesión. Revisa que el cURL tenga la cookie.', 'error');
+    }
+  } catch (e) { showToast('Error: ' + e, 'error'); }
 }
 
 async function loginWithCookie() {

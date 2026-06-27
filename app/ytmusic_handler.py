@@ -87,11 +87,37 @@ class YTMusicHandler:
         h.setdefault('x-origin', 'https://music.youtube.com')
         return h
 
+    def _parse_curl(self, text):
+        headers = {}
+        cookie = None
+        for line in text.splitlines():
+            line = line.strip().rstrip('\\').strip()
+            m = re.match(r'-H\s+(?:"([^"]*)"|\'([^\']*)\')', line)
+            if m:
+                val = m.group(1) or m.group(2)
+                key, _, value = val.partition(': ')
+                if key.lower() == 'cookie':
+                    cookie = value
+                else:
+                    headers[key] = value
+        if cookie:
+            headers['Cookie'] = cookie
+        return headers
+
     def _save_headers_file(self, headers_dict=None, headers_raw=None):
         self._headers_file.parent.mkdir(parents=True, exist_ok=True)
         if headers_raw:
-            ytmusicapi.setup(filepath=str(self._headers_file), headers_raw=headers_raw)
-        elif headers_dict:
+            parsed = self._parse_curl(headers_raw)
+            parsed.update({
+                'x-goog-authuser': '0',
+                'x-origin': 'https://music.youtube.com',
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+            })
+            if 'Cookie' not in parsed:
+                raise ValueError('No se encontró la cookie en el cURL. Asegúrate de haber iniciado sesión en Firefox.')
+            headers_dict = parsed
+        if headers_dict:
             normalized = self._normalize_headers_dict(headers_dict)
             with open(str(self._headers_file), 'w', encoding='utf-8') as f:
                 json.dump(normalized, f, indent=2)
