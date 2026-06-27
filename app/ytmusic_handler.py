@@ -91,6 +91,7 @@ class YTMusicHandler:
         h.setdefault('Content-Type', 'application/json')
         h.setdefault('X-Goog-AuthUser', '0')
         h.setdefault('x-origin', 'https://music.youtube.com')
+        h.setdefault('Authorization', 'SAPISIDHASH 0_0')
         return h
 
     def _parse_curl(self, text):
