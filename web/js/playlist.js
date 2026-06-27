@@ -42,9 +42,9 @@ async function loadPlaylists() {
 }
 
 async function showPlaylistDetail(playlistId) {
-  currentPlaylistId = playlistId;
   pushView('playlists');
   switchView('playlists');
+  currentPlaylistId = playlistId;
   $('playlistsGrid').style.display = 'none';
   $('playlistDetail').style.display = 'block';
 
