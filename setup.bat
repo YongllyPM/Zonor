@@ -43,7 +43,7 @@ echo  ============================================================
 echo.
 echo  Paso 2/5: Instalando dependencias Python...
 echo.
-echo  Paquetes: pywebview, ytmusicapi, yt-dlp, Pillow, requests, syncedlyrics
+echo  Paquetes: pywebview, ytmusicapi, yt-dlp, Pillow, requests, syncedlyrics, browser-cookie3
 echo.
 echo  (Esto puede tardar varios minutos, depende de tu internet)
 echo.
@@ -146,6 +146,7 @@ python -c "import ytmusicapi" >nul 2>&1 && echo  [OK] ytmusicapi    || echo  [FA
 python -c "import yt_dlp" >nul 2>&1 && echo  [OK] yt-dlp        || echo  [FAIL] yt-dlp
 python -c "import PIL" >nul 2>&1 && echo  [OK] Pillow        || echo  [FAIL] Pillow
 python -c "import syncedlyrics" >nul 2>&1 && echo  [OK] syncedlyrics || echo  [FAIL] syncedlyrics
+python -c "import browser_cookie3" >nul 2>&1 && echo  [OK] browser-cookie3 || echo  [FAIL] browser-cookie3
 if exist "%ROOT%\zonor.ico" ( echo  [OK] Icono ) else ( echo  [AVISO] Sin icono )
 if exist "%BIN_DIR%\yt-dlp.exe" ( echo  [OK] yt-dlp.exe ) else ( echo  [AVISO] Sin yt-dlp.exe )
 echo.

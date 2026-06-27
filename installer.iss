@@ -9,7 +9,7 @@
 #define MyAppName "Zonor"
 #define MyAppVersion "1.0"
 #define MyAppPublisher "Zonor"
-#define MyAppURL "https://github.com/yourusername/zonor"
+#define MyAppURL "https://github.com/YongllyPM/Zonor"
 
 [Setup]
 AppId={{B8A3C8E1-4F2A-4A8C-9D7E-1F2B3C4D5E6F}
