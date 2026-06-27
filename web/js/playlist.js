@@ -40,9 +40,10 @@ async function loadPlaylists() {
 
 async function showPlaylistDetail(playlistId) {
   currentPlaylistId = playlistId;
+  pushView('playlists');
+  switchView('playlists');
   $('playlistsGrid').style.display = 'none';
   $('playlistDetail').style.display = 'block';
-  pushView('playlists');
 
   try {
     const songs = await pywebview.api.getPlaylistSongs(playlistId);
@@ -59,8 +60,7 @@ function playPlaylistDetail() {
 }
 
 function showPlaylistsGrid() {
-  $('playlistsGrid').style.display = 'grid';
-  $('playlistDetail').style.display = 'none';
+  switchView('playlists');
   currentPlaylistId = null;
 }
 

@@ -20,6 +20,8 @@ async function loadArtists() {
 
 async function showArtistDetail(channelId) {
   currentArtistId = channelId;
+  pushView('artists');
+  switchView('artists');
   try {
     const data = await pywebview.api.getArtistAlbums(channelId);
     if (!data) { showToast('Error al cargar artista', 'error'); return; }
@@ -46,7 +48,6 @@ async function showArtistDetail(channelId) {
 }
 
 function showArtistsGrid() {
-  $('artistDetail').style.display = 'none';
-  $('artistsGrid').style.display = '';
+  switchView('artists');
   currentArtistId = null;
 }
