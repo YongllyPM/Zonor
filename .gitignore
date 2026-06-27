@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+bin/
+*.exe
+*.ico
+icon_source.png
+.env
+*.json
+.DS_Store
+Thumbs.db

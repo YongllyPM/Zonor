@@ -1,0 +1,6 @@
+pywebview>=4.0
+ytmusicapi>=1.8.0
+yt-dlp>=2024.0
+Pillow>=10.0
+requests>=2.31
+syncedlyrics>=1.0.0

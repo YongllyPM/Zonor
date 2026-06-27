@@ -1,0 +1,31 @@
+/* ============================================================
+   ZONOR — Sistema de Temas
+   ============================================================
+   :root  → Classic Dark Flat (por defecto)
+   .glassmorphic → Modern Glassmorphic (se activa con clase en <body>)
+   ============================================================ */
+
+/* ---------- Tema 1: Classic Dark Flat ---------- */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --bg-card: #16162b;
+  --bg-hover: #1f1f35;
+  --bg-elevated: #20203a;
+  --text-primary: #e8e8f0;
+  --text-secondary: #9898b8;
+  --text-muted: #5c5c7a;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-secondary: #ec4899;
+  --border: #2a2a45;
+  --shadow: rgba(124, 58, 237, 0.15);
+  --player-bg: #12121a;
+  --sidebar-bg: #0f0f18;
+  --input-bg: #1a1a2e;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
+

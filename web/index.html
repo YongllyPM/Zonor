@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: http://localhost:*; img-src 'self' data: https: http: blob: file:; media-src 'self' https: http: blob: file:;">
+<title>Zonor</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/themes.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M9.525 18.025V5.975L18.025 12l-8.5 6.025Z"/></svg>
+          <span>Zonor</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-view="home" onclick="switchView('home')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Inicio</span>
+        </a>
+        <a class="nav-item" data-view="search" onclick="switchView('search')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <span>Buscar</span>
+        </a>
+        <a class="nav-item" data-view="library" onclick="switchView('library')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
+          <span>Biblioteca</span>
+        </a>
+        <a class="nav-item" data-view="playlists" onclick="switchView('playlists')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          <span>Playlists</span>
+        </a>
+        <a class="nav-item" data-view="liked" onclick="switchView('liked')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span>Me gusta</span>
+        </a>
+        <a class="nav-item" data-view="downloads" onclick="switchView('downloads')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span>Descargas</span>
+        </a>
+      </nav>
+      <div class="sidebar-playlists" id="sidebarPlaylists">
+        <div class="sidebar-section-title">Tus Playlists</div>
+        <div id="playlistList"></div>
+      </div>
+      <div class="sidebar-footer">
+        <a class="nav-item" data-view="settings" onclick="switchView('settings')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span>Ajustes</span>
+        </a>
+      </div>
+    </aside>
+
+    <main id="main-content">
+      <header id="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon" onclick="historyBack()" title="Atrás">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <button class="btn-icon" onclick="historyForward()" title="Adelante">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+          </button>
+        </div>
+        <div class="topbar-center">
+          <div class="auth-status" id="authStatus">
+            <button class="btn-auth" onclick="showAuthDialog()">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              <span id="authBtnText">Iniciar Sesión</span>
+            </button>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn-icon" onclick="switchView('settings')" title="Configuración">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div id="view-container">
+        <div id="view-home" class="view active">
+          <div class="view-header"><h1>Inicio</h1></div>
+          <div class="home-sections">
+            <section id="homeContinuePlaying" style="display:none">
+              <h2>Reproduciendo ahora</h2>
+              <div class="now-playing-card" onclick="switchView('player')">
+                <div class="now-playing-info">
+                  <div class="now-playing-thumb" id="homeCurrentThumb"></div>
+                  <div class="now-playing-details">
+                    <div class="now-playing-title" id="homeCurrentTitle">Sin reproducción</div>
+                    <div class="now-playing-artist" id="homeCurrentArtist"></div>
+                  </div>
+                </div>
+                <button class="btn-icon" id="homePlayBtn" onclick="event.stopPropagation();togglePlay()">
+                  <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                </button>
+              </div>
+            </section>
+            <section id="homeQuickPlay">
+              <h2>Inicio rápido</h2>
+              <div class="quick-actions">
+                <button class="quick-action-btn" onclick="switchView('search')">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                  <span>Buscar música</span>
+                </button>
+                <button class="quick-action-btn" onclick="switchView('library')">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                  <span>Mi biblioteca</span>
+                </button>
+                <button class="quick-action-btn" onclick="switchView('playlists')">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+                  <span>Playlists</span>
+                </button>
+                <button class="quick-action-btn" onclick="switchView('downloads')">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  <span>Descargas</span>
+                </button>
+              </div>
+            </section>
+            <section id="homeLoading">
+              <div class="home-loading">
+                <div class="lyrics-spinner"></div>
+                <span>Cargando tu música...</span>
+              </div>
+            </section>
+            <section id="homeRecentSection" style="display:none">
+              <h2>Escuchado recientemente</h2>
+              <div class="song-list" id="homeRecentGrid"></div>
+            </section>
+            <section id="homeNewSection" style="display:none">
+              <h2>Nuevos estrenos</h2>
+              <div class="song-list" id="homeNewGrid"></div>
+            </section>
+            <section id="homeListenAgainSection" style="display:none">
+              <h2>Vuelve a escuchar</h2>
+              <div class="song-list" id="homeListenAgainGrid"></div>
+            </section>
+            <section id="homeTrendingSection" style="display:none">
+              <h2>Tendencia</h2>
+              <div class="song-list" id="homeTrendingGrid"></div>
+            </section>
+            <section id="homeTopSection" style="display:none">
+              <h2>Lo más popular</h2>
+              <div class="song-list" id="homeTopGrid"></div>
+            </section>
+            <section id="homePlaylistSection" style="display:none">
+              <h2>Playlists recomendadas</h2>
+              <div class="playlist-grid" id="homePlaylistGrid"></div>
+            </section>
+            <section id="homeLiked" style="display:none">
+              <h2>Tus Me Gusta <button class="btn-text" onclick="loadLikedSongs()">Actualizar</button></h2>
+              <div class="song-list" id="homeLikedGrid"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="view-search" class="view">
+          <div class="search-container">
+            <div class="search-bar">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" id="searchInput" placeholder="Buscar canciones, artistas, álbumes..." oninput="debounceSearch()" autocomplete="off">
+            </div>
+            <div id="searchSuggestions" class="search-suggestions" style="display:none"></div>
+          </div>
+          <div id="searchResults" class="song-list"></div>
+          <div id="searchPlaceholder" class="placeholder">
+            <svg viewBox="0 0 24 24" width="64" height="64" opacity="0.3"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <p>Busca lo que quieras escuchar</p>
+          </div>
+        </div>
+
+        <div id="view-library" class="view">
+          <div class="view-header">
+            <h1>Biblioteca</h1>
+            <button class="btn-text" onclick="loadLibrary()">Actualizar</button>
+          </div>
+          <div id="libraryContent" class="song-list"></div>
+        </div>
+
+        <div id="view-playlists" class="view">
+          <div class="view-header">
+            <h1>Playlists</h1>
+            <button class="btn-primary" onclick="showCreatePlaylist()">+ Nueva</button>
+          </div>
+          <div id="playlistsGrid" class="playlists-grid"></div>
+          <div id="playlistDetail" style="display:none">
+            <div class="playlist-detail-header">
+              <button class="btn-text" onclick="showPlaylistsGrid()">← Volver</button>
+              <h2 id="playlistDetailName"></h2>
+              <button class="btn-primary" onclick="playPlaylistDetail()">▶ Reproducir</button>
+            </div>
+            <div id="playlistDetailSongs" class="song-list"></div>
+          </div>
+        </div>
+
+        <div id="view-downloads" class="view">
+          <div class="view-header">
+            <h1>Descargas</h1>
+          </div>
+          <div id="downloadsContent" class="song-list"></div>
+        </div>
+
+        <div id="view-liked" class="view">
+          <div class="view-header">
+            <h1>Me gusta</h1>
+            <button class="btn-text" onclick="loadLikedView()">Actualizar</button>
+          </div>
+          <div class="song-list" id="likedGrid"></div>
+        </div>
+
+        <div id="view-player" class="view">
+          <div class="player-split">
+            <div class="player-left">
+              <div class="player-art">
+                <div class="player-thumbnail" id="playerThumb">
+                  <svg viewBox="0 0 24 24" width="80" height="80"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                </div>
+              </div>
+              <div class="player-info">
+                <div class="player-title" id="playerTitle">Selecciona una canción</div>
+                <div class="player-artist" id="playerArtist"></div>
+              </div>
+              <div class="player-progress">
+                <span class="time" id="currentTime">0:00</span>
+                <div class="progress-bar" id="progressBar" onclick="seekFromClick(event)">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="time" id="totalTime">0:00</span>
+              </div>
+              <div class="player-controls">
+                <button class="btn-icon btn-shuffle" onclick="toggleShuffle()" title="Aleatorio (S)">
+                  <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                </button>
+                <button class="btn-icon" onclick="prevSong()" title="Anterior">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button class="btn-icon btn-play" id="mainPlayBtn" onclick="togglePlay()">
+                  <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button class="btn-icon" onclick="nextSong()" title="Siguiente">
+                  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+                <button class="btn-icon btn-repeat" onclick="toggleRepeat()" title="Repetir (R)">
+                  <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                </button>
+              </div>
+              <div class="player-extra-controls">
+                <button class="btn-icon btn-like" id="playerLikeBtn" onclick="toggleLike()" title="Me gusta (L)">
+                  <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </button>
+              </div>
+              <div class="player-volume">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                <input type="range" min="0" max="100" id="volumeSlider" oninput="setVolume(this.value)" class="volume-slider">
+              </div>
+            </div>
+            <div class="player-right">
+              <div class="lyrics-section">
+                <h3>Letra</h3>
+                <div id="lyricsContainer" class="lyrics-container">
+                  <div class="lyrics-placeholder">
+                    <svg viewBox="0 0 24 24" width="48" height="48" opacity="0.3"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                    <p>Selecciona una canción para ver su letra</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-settings" class="view">
+          <div class="view-header"><h1>Ajustes</h1></div>
+          <div class="settings-content">
+            <div class="settings-section">
+              <h3>Apariencia</h3>
+              <div class="setting-row">
+                <label>Tema</label>
+                <div class="theme-selector" id="themeSelector"></div>
+              </div>
+              <div class="setting-row">
+                <label>Personalizar tema</label>
+                <button class="btn-text" onclick="showThemeEditor()">Editar tema actual</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Reproducción</h3>
+              <div class="setting-row">
+                <label>Volumen predeterminado</label>
+                <input type="range" min="0" max="100" id="defaultVolume" oninput="document.getElementById('volVal').textContent=this.value" class="volume-slider">
+                <span id="volVal">80</span>
+              </div>
+              <div class="setting-row">
+                <label>Transición suave (s)</label>
+                <input type="number" id="crossfade" value="0" min="0" max="10" class="setting-input" style="width:80px" onchange="saveAllSettings()">
+                <span class="text-muted" style="font-size:12px">0 = desactivado</span>
+              </div>
+              <div class="setting-row">
+                <label>Saltar silencios</label>
+                <label class="switch">
+                  <input type="checkbox" id="skipSilence" onchange="saveAllSettings()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <label>Ecualizador</label>
+                <button class="btn-text" onclick="toggleEqualizer()">Abrir ecualizador</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Audio</h3>
+              <div class="setting-row">
+                <label>Calidad de audio</label>
+                <select id="audioQuality" class="setting-input" onchange="saveAllSettings()">
+                  <option value="best">Mejor calidad</option>
+                  <option value="high">Alta (192k)</option>
+                  <option value="medium">Media (128k)</option>
+                  <option value="low">Baja (64k)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label>Formato de descarga</label>
+                <select id="audioFormat" class="setting-input" onchange="saveAllSettings()">
+                  <option value="mp3">MP3</option>
+                  <option value="m4a">M4A (AAC)</option>
+                  <option value="opus">Opus</option>
+                  <option value="flac">FLAC</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>YouTube Music</h3>
+              <div class="setting-row">
+                <label>Cuenta</label>
+                <div id="settingsAuthStatus">
+                  <span class="text-muted">No conectado</span>
+                </div>
+              </div>
+              <div class="setting-row">
+                <label>Sincronización automática</label>
+                <button class="btn-text" id="syncToggleBtn" onclick="toggleSync()">Activar sincronización</button>
+              </div>
+              <div class="setting-row">
+                <label>Intervalo de sincronización (s)</label>
+                <input type="number" id="syncInterval" value="60" min="10" max="600" class="setting-input" onchange="saveAllSettings()">
+              </div>
+              <div class="setting-row">
+                <label>Forzar sincronización</label>
+                <button class="btn-text" onclick="forceSync()">Sincronizar ahora</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Descargas</h3>
+              <div class="setting-row">
+                <label>Descargar Me gusta</label>
+                <button class="btn-text" onclick="downloadAllLiked()">Descargar todas</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Cuenta</h3>
+              <div class="setting-row">
+                <label></label>
+                <div id="settingsAuthActions">
+                  <button class="btn-primary" onclick="showAuthDialog()">Iniciar sesión</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equalizer Modal -->
+    <div id="equalizerModal">
+      <div class="eq-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 style="font-size:16px;font-weight:600">Ecualizador</h3>
+          <button class="btn-icon dialog-close" onclick="closeEqualizer()">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <p class="text-muted" style="font-size:12px;margin-bottom:4px">Ajusta la ganancia de cada frecuencia (-12dB a +12dB)</p>
+        <div class="eq-bands">
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="60" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>60 Hz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="170" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>170 Hz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="310" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>310 Hz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="600" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>600 Hz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="1000" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>1 KHz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="3000" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>3 KHz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="6000" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>6 KHz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="12000" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>12 KHz</label>
+          </div>
+          <div class="eq-band">
+            <input type="range" min="-12" max="12" value="0" data-freq="16000" oninput="this.nextElementSibling.textContent=this.value">
+            <span class="eq-val">0</span>
+            <label>16 KHz</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+          <button class="btn-text" onclick="resetEqualizer()">Restablecer</button>
+          <button class="btn-primary" onclick="closeEqualizer()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottom-player" class="mini-player">
+      <div class="mini-player-left" onclick="switchView('player')">
+        <div class="mini-player-thumb" id="miniThumb">
+          <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+        <div class="mini-player-info">
+          <div class="mini-player-title" id="miniTitle">Selecciona una canción</div>
+          <div class="mini-player-artist" id="miniArtist"></div>
+        </div>
+      </div>
+      <div class="mini-player-center">
+        <button class="btn-icon btn-shuffle" onclick="toggleShuffle()" title="Aleatorio">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="btn-icon" onclick="prevSong()">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="btn-icon btn-play-mini" id="miniPlayBtn" onclick="togglePlay()">
+          <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn-icon" onclick="nextSong()">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="btn-icon btn-repeat" onclick="toggleRepeat()" title="Repetir">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+        <button class="btn-icon btn-like" id="miniLikeBtn" onclick="toggleLike()" title="Me gusta">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </button>
+      </div>
+      <div class="mini-player-right">
+        <span class="mini-time" id="miniCurrentTime">0:00</span>
+        <div class="mini-progress" id="miniProgress" onclick="seekMiniFromClick(event)"><div class="mini-progress-fill" id="miniProgressFill"></div></div>
+        <span class="mini-time" id="miniTotalTime">0:00</span>
+        <div class="mini-volume">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+          <input type="range" min="0" max="100" value="80" oninput="setVolume(this.value)" class="volume-slider">
+        </div>
+      </div>
+    </div>
+    </main>
+  </div>
+
+  <div id="authDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'authDialog')">
+    <div class="dialog dialog-auth" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Conectar con YouTube Music</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'authDialog')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="quick" onclick="switchAuthTab('quick')">Rápido</button>
+        <button class="auth-tab" data-tab="saved" onclick="switchAuthTab('saved')">Sesión guardada</button>
+        <button class="auth-tab" data-tab="advanced" onclick="switchAuthTab('advanced')">Avanzado</button>
+      </div>
+      <div class="dialog-body">
+        <div id="authPanel-quick" class="auth-panel">
+          <p class="text-muted">Paso 1: abre YouTube Music e inicia sesión.<br>Paso 2: en la pestaña <strong>Avanzado</strong> pega tu cookie o headers.</p>
+          <button class="btn-primary btn-full" id="loginBrowserBtn" onclick="loginBrowser()">Abrir YouTube Music</button>
+          <p class="text-muted" style="margin-top:12px;font-size:12px">OAuth solo si tienes client_id/secret de Google Cloud (opcional).</p>
+          <button class="btn-text btn-full" onclick="loginOAuth()">Intentar OAuth (avanzado)</button>
+        </div>
+        <div id="authPanel-saved" class="auth-panel" style="display:none">
+          <p class="text-muted">Si ya iniciaste sesión antes, reconecta con un clic.</p>
+          <button class="btn-primary btn-full" onclick="loginAuto()">Reconectar sesión guardada</button>
+        </div>
+        <div id="authPanel-advanced" class="auth-panel" style="display:none">
+          <details class="auth-help" open>
+            <summary>Cómo obtener la cookie (más fácil)</summary>
+            <ol class="auth-steps">
+              <li>Abre <strong>music.youtube.com</strong> e inicia sesión</li>
+              <li>Pulsa <strong>F12</strong> → pestaña <strong>Application</strong> (o Almacenamiento)</li>
+              <li>En <strong>Cookies</strong> → <code>https://music.youtube.com</code></li>
+              <li>Copia todo el valor de la cookie o usa "Copy all" si está disponible</li>
+            </ol>
+          </details>
+          <p class="text-muted"><strong>Opción A:</strong> Pega la cookie de sesión</p>
+          <textarea id="cookieInput" class="input-area" rows="3" placeholder="VISITOR_INFO1_LIVE=...; __Secure-3PSID=..."></textarea>
+          <button class="btn-primary btn-full" onclick="loginWithCookie()" style="margin-top:8px">Conectar con cookie</button>
+          <div class="divider"><span>o</span></div>
+          <details class="auth-help">
+            <summary>Opción B: Headers completos (Chrome → Copy as fetch)</summary>
+            <p class="text-muted" style="font-size:12px;margin:8px 0">En DevTools → Network → filtra "browse" → clic derecho → Copy as fetch (Node.js). Pega aquí:</p>
+          </details>
+          <textarea id="headersInput" class="input-area" rows="5" placeholder='Pega fetch(...) de Chrome o JSON: {"Cookie": "...", "x-origin": "https://music.youtube.com"}'></textarea>
+          <button class="btn-primary btn-full" onclick="loginWithHeaders()" style="margin-top:8px">Conectar con headers</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="playlistDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'playlistDialog')">
+    <div class="dialog" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2 id="playlistDialogTitle">Nueva playlist</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'playlistDialog')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <input type="text" id="playlistNameInput" class="setting-input" placeholder="Nombre de la playlist">
+        <input type="text" id="playlistDescInput" class="setting-input" placeholder="Descripción (opcional)" style="margin-top:8px">
+        <button class="btn-primary btn-full" onclick="confirmCreatePlaylist()" style="margin-top:12px">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addToPlaylistDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'addToPlaylistDialog')">
+    <div class="dialog dialog-sm" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Agregar a playlist</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'addToPlaylistDialog')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body" id="playlistChooser"></div>
+    </div>
+  </div>
+
+  <div id="themeEditor" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'themeEditor')">
+    <div class="dialog dialog-lg" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Editor de tema</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'themeEditor')">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="theme-editor-grid" id="themeEditorGrid"></div>
+        <div class="theme-editor-actions">
+          <input type="text" id="themeNameInput" class="setting-input" placeholder="Nombre del tema" style="flex:1">
+          <button class="btn-primary" onclick="saveCustomTheme()">Guardar tema</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/playlist.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/lyrics.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/downloads.js"></script>
+  <script src="js/theme.js"></script>
+</body>
+</html>
