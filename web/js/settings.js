@@ -113,3 +113,23 @@ function resetEqualizer() {
   document.querySelectorAll('.eq-val').forEach(el => el.textContent = '0');
   if (window.applyEqualizer) window.applyEqualizer({});
 }
+
+function factoryReset() {
+  if (!confirm('⚠️ ¿Restablecer todo?\n\nSe borrarán TODAS las descargas, playlists guardadas, canciones con "Me gusta", y se cerrará la sesión.\n\n¿Estás seguro?')) return;
+  if (!confirm('Esta acción NO se puede deshacer. ¿Continuar?')) return;
+  (async () => {
+    try {
+      const result = await pywebview.api.factoryReset();
+      if (result?.success) {
+        showToast('Reproductor restablecido. Se cerrará la ventana.', 'success');
+        setTimeout(() => {
+          if (window.close) window.close();
+        }, 2000);
+      } else {
+        showToast('Error al restablecer: ' + (result?.error || 'desconocido'), 'error');
+      }
+    } catch (e) {
+      showToast('Error al restablecer: ' + e.message, 'error');
+    }
+  })();
+}

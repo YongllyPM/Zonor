@@ -163,6 +163,26 @@ class API:
     def logout(self):
         self.ytmusic.logout()
 
+    def factoryReset(self):
+        try:
+            dl_dir = db.get_setting('download_folder') or str(Path(os.environ['APPDATA']) / 'Zonor' / 'downloads')
+            import shutil
+            if Path(dl_dir).exists():
+                for f in Path(dl_dir).iterdir():
+                    if f.is_file():
+                        f.unlink()
+            self.logout()
+            db.clear_all()
+            db.cache_clear()
+            self.player.stop()
+            self.current_queue = []
+            self.queue_index = -1
+            self.current_playing_id = None
+            return {'success': True}
+        except Exception as e:
+            traceback.print_exc()
+            return {'success': False, 'error': str(e)}
+
     # ===== Home / Charts =====
     def get_home(self):
         cached = db.cache_get('home_feed')

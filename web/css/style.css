@@ -1570,6 +1570,8 @@ code {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.btn-danger { background: var(--error) !important; color: #fff !important; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 

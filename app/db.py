@@ -289,6 +289,26 @@ def cache_get(key):
     return None
 
 
+def clear_all():
+    conn = get_conn()
+    conn.execute("DELETE FROM songs")
+    conn.execute("DELETE FROM playlists")
+    conn.execute("DELETE FROM playlist_songs")
+    conn.execute("DELETE FROM downloads")
+    conn.execute("DELETE FROM recent_plays")
+    conn.execute("DELETE FROM cache")
+    conn.execute("DELETE FROM settings WHERE key NOT IN ('download_folder', 'color_overrides', 'active_theme', 'volume', 'crossfade', 'skip_silence', 'repeat_mode', 'shuffle_enabled')")
+    conn.commit()
+    conn.close()
+
+
+def cache_clear():
+    conn = get_conn()
+    conn.execute("DELETE FROM cache")
+    conn.commit()
+    conn.close()
+
+
 def cache_set(key, value, ttl=3600):
     conn = get_conn()
     import time
