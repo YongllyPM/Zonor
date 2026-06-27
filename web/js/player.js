@@ -90,7 +90,7 @@ async function crossfadeToSong(index) {
     const songData = currentQueue[index];
     const data = await pywebview.api.getStreamUrl(songData.id);
     if (!data) { isCrossfading = false; return playAtIndex(index); }
-    next.src = data.type === 'stream' ? data.url : data.path;
+    next.src = data.type === 'stream' ? data.url : fileUrl(data.path);
     await Promise.race([
       new Promise(resolve => { next.addEventListener('canplaythrough', resolve, { once: true }); }),
       new Promise(resolve => setTimeout(resolve, 5000)),
@@ -101,10 +101,10 @@ async function crossfadeToSong(index) {
     updateLikeButtons();
     prefetchLyrics(currentSong?.id);
     if (shuffleOn) buildShuffleOrder();
-    if (next.paused) await next.play();
     const startVol = Math.max(0.01, current.volume);
     const targetVol = startVol;
     next.volume = 0.01;
+    if (next.paused) await next.play();
     const fadeSteps = 20;
     const stepTime = (crossfadeDuration * 1000) / fadeSteps;
     let step = 0;
