@@ -82,8 +82,8 @@ class JSAPI:
     def removeFromPlaylist(self, playlist_id, song_id):
         self._api.remove_from_playlist(playlist_id, song_id)
 
-    def playSong(self, song_id):
-        return self._api.play_song(song_id)
+    def playSong(self, song_id, queue=None):
+        return self._api.play_song(song_id, queue)
 
     def playPlaylist(self, playlist_id, start_index=0):
         return self._api.play_playlist(playlist_id, start_index)
