@@ -58,6 +58,12 @@ class JSAPI:
     def getLikedSongs(self):
         return self._api.get_liked_songs()
 
+    def getArtists(self):
+        return self._api.get_artists()
+
+    def getArtistAlbums(self, channel_id):
+        return self._api.get_artist_albums(channel_id)
+
     def getPlaylists(self):
         return self._api.get_playlists()
 

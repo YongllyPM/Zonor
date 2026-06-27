@@ -20,6 +20,7 @@ function switchView(view) {
   if (view === 'playlists') loadPlaylists();
   if (view === 'downloads') loadDownloads();
   if (view === 'liked') loadLikedView();
+  if (view === 'artists') loadArtists();
   if (view === 'player') loadLyrics();
 }
 

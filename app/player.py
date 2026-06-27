@@ -85,6 +85,16 @@ class MusicPlayer:
             print(f"Stream URL error: {e}")
         return None
 
+    def preload_stream_urls(self, video_ids):
+        for vid in video_ids:
+            if not vid:
+                continue
+            if vid in self._stream_cache:
+                cached_url, expires = self._stream_cache[vid]
+                if time.time() < expires:
+                    continue
+            threading.Thread(target=self.get_stream_url, args=(vid,), daemon=True).start()
+
     def invalidate_stream_cache(self, video_id=None):
         if video_id:
             self._stream_cache.pop(video_id, None)

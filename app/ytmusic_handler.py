@@ -415,6 +415,53 @@ class YTMusicHandler:
             print(f"Get library error: {e}")
             return []
 
+    def get_subscriptions(self):
+        if not self.authenticated:
+            return []
+        try:
+            subs = self.yt.get_library_subscriptions(limit=50)
+            artists = []
+            for s in subs:
+                artist = {
+                    'id': s.get('browseId', ''),
+                    'name': s.get('artist', s.get('title', 'Unknown')),
+                    'subscribers': s.get('subscribers', ''),
+                    'thumbnails': s.get('thumbnails', []),
+                    'thumbnail': s.get('thumbnails', [{}])[-1].get('url', '') if s.get('thumbnails') else '',
+                }
+                artists.append(artist)
+            return artists
+        except Exception as e:
+            print(f"Get subscriptions error: {e}")
+            return []
+
+    def get_artist_albums(self, channel_id, params=None):
+        if not self.authenticated:
+            return []
+        try:
+            data = self.yt.get_artist(channel_id)
+            albums = []
+            for section in ['albums', 'singles', 'videos']:
+                for item in data.get(section, {}).get('results', []):
+                    albums.append({
+                        'id': item.get('browseId', ''),
+                        'title': item.get('title', ''),
+                        'year': item.get('year', ''),
+                        'thumbnails': item.get('thumbnails', []),
+                        'thumbnail': item.get('thumbnails', [{}])[-1].get('url', '') if item.get('thumbnails') else '',
+                    })
+            return {
+                'name': data.get('name', ''),
+                'description': data.get('description', ''),
+                'thumbnails': data.get('thumbnails', []),
+                'thumbnail': data.get('thumbnails', [{}])[-1].get('url', '') if data.get('thumbnails') else '',
+                'subscribers': data.get('subscribers', ''),
+                'albums': albums,
+            }
+        except Exception as e:
+            print(f"Get artist error: {e}")
+            return None
+
     def get_liked_songs(self):
         if not self.authenticated:
             return []

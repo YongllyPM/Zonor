@@ -195,17 +195,13 @@ class API:
     def get_library(self):
         return self.ytmusic.get_library()
 
+    def get_artists(self):
+        return self.ytmusic.get_subscriptions()
+
+    def get_artist_albums(self, channel_id):
+        return self.ytmusic.get_artist_albums(channel_id)
+
     def get_liked_songs(self):
-        if self.ytmusic.is_authenticated():
-            try:
-                remote = self.ytmusic.get_liked_songs()
-                for s in remote:
-                    s['liked'] = 1
-                    db.save_song(s)
-                return remote
-            except Exception:
-                pass
-        return db.get_liked_songs()
 
     def is_liked(self, song_id):
         return db.is_liked(song_id)
@@ -316,7 +312,7 @@ class API:
             self.ytmusic.remove_from_playlist(pl['sync_id'], video_id)
 
     # ===== Player =====
-    def get_stream_url(self, song_id):
+    def get_stream_url(self, song_id, preload_next=0):
         song = db.get_song(song_id)
         if not song:
             return None
@@ -350,6 +346,16 @@ class API:
             db.record_play(song_id)
             self.player.on_state_change('playing', song)
             threading.Thread(target=self._prefetch_lyrics, args=(song_id,), daemon=True).start()
+        # Preload next songs in queue
+        if len(self.current_queue) > 1:
+            next_vids = []
+            for i in range(self.queue_index + 1, min(self.queue_index + 4, len(self.current_queue))):
+                s = self.current_queue[i]
+                vid = s.get('youtube_id', s.get('id', ''))
+                if vid:
+                    next_vids.append(vid)
+            if next_vids:
+                threading.Thread(target=self.player.preload_stream_urls, args=(next_vids,), daemon=True).start()
         return result
 
     def _prefetch_lyrics(self, song_id):
