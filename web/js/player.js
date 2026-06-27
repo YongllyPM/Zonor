@@ -1,14 +1,18 @@
-// ===== HTML5 Audio Player =====
-const audio = new Audio();
-audio.volume = 0.8;
+const audioA = new Audio();
+const audioB = new Audio();
+audioA.volume = 0.8;
+audioB.volume = 0;
+let activeAudio = audioA;
+
+function inactiveAudio() { return activeAudio === audioA ? audioB : audioA; }
+
 let currentQueue = [];
 let currentQueueIndex = -1;
 let shuffleOn = false;
-let repeatMode = 'off'; // off | one | all
+let repeatMode = 'off';
 let shuffleOrder = [];
 let streamRetryCount = 0;
 
-// ===== Web Audio API (Equalizer, Crossfade, Skip Silence) =====
 let audioCtx = null;
 let eqGainNodes = {};
 let eqFilters = [];
@@ -20,7 +24,8 @@ const EQ_FREQS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 16000];
 function initAudioContext() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const src = audioCtx.createMediaElementSource(audio);
+  const srcA = audioCtx.createMediaElementSource(audioA);
+  const srcB = audioCtx.createMediaElementSource(audioB);
   eqFilters = [];
   const freqs = [
     { f: 60, type: 'lowshelf' },
@@ -33,7 +38,7 @@ function initAudioContext() {
     { f: 12000, type: 'peaking', Q: 0.7 },
     { f: 16000, type: 'highshelf' },
   ];
-  let chain = src;
+  let chain = srcA;
   freqs.forEach(({ f, type, Q }) => {
     const filter = audioCtx.createBiquadFilter();
     filter.type = type;
@@ -45,6 +50,7 @@ function initAudioContext() {
     eqFilters.push({ freq: f, node: filter });
   });
   chain.connect(audioCtx.destination);
+  srcB.connect(eqFilters.length ? eqFilters[0].node : audioCtx.destination);
 }
 
 function applyEqualizer(eqData) {
@@ -75,36 +81,54 @@ function applySkipSilence(enabled) {
 }
 window.applySkipSilence = applySkipSilence;
 
-function crossfadeToNext(nextFn) {
-  if (!crossfadeDuration || crossfadeDuration <= 0 || isCrossfading) {
-    nextFn();
-    return;
-  }
+async function crossfadeToSong(index) {
+  if (isCrossfading) return;
   isCrossfading = true;
-  const startVol = audio.volume;
-  const fadeSteps = 20;
-  const stepTime = (crossfadeDuration * 1000) / fadeSteps;
-  let step = 0;
-  const fade = setInterval(() => {
-    try {
-      step++;
-      const progress = step / fadeSteps;
-      audio.volume = Math.max(0, startVol * (1 - progress));
-      if (step >= fadeSteps) {
-        clearInterval(fade);
-        audio.volume = startVol;
-        isCrossfading = false;
-        nextFn();
-      }
-    } catch(e) {
-      clearInterval(fade);
-      isCrossfading = false;
-      nextFn();
-    }
-  }, stepTime);
+  const current = activeAudio;
+  const next = inactiveAudio();
+  try {
+    const songData = currentQueue[index];
+    const data = await pywebview.api.getStreamUrl(songData.id);
+    if (!data) { isCrossfading = false; return playAtIndex(index); }
+    next.src = data.type === 'stream' ? data.url : data.path;
+    await Promise.race([
+      new Promise(resolve => { next.addEventListener('canplaythrough', resolve, { once: true }); }),
+      new Promise(resolve => setTimeout(resolve, 5000)),
+    ]);
+    currentQueueIndex = index;
+    currentSong = songData;
+    updateNowPlaying(currentSong);
+    updateLikeButtons();
+    prefetchLyrics(currentSong?.id);
+    if (shuffleOn) buildShuffleOrder();
+    if (next.paused) await next.play();
+    const startVol = Math.max(0.01, current.volume);
+    const targetVol = startVol;
+    next.volume = 0.01;
+    const fadeSteps = 20;
+    const stepTime = (crossfadeDuration * 1000) / fadeSteps;
+    let step = 0;
+    return new Promise(resolve => {
+      const fade = setInterval(() => {
+        step++;
+        const progress = step / fadeSteps;
+        current.volume = Math.max(0, startVol * (1 - progress));
+        next.volume = Math.min(targetVol, targetVol * progress);
+        if (step >= fadeSteps) {
+          clearInterval(fade);
+          current.pause();
+          current.src = '';
+          activeAudio = next;
+          isCrossfading = false;
+          resolve(true);
+        }
+      }, stepTime);
+    });
+  } catch(e) {
+    isCrossfading = false;
+    return playAtIndex(index);
+  }
 }
-
-
 
 const ICONS = {
   shuffle: 'M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z',
@@ -146,7 +170,7 @@ function getNextIndex() {
 
 function getPrevIndex() {
   if (!currentQueue.length) return -1;
-  if (audio.currentTime > 3) return currentQueueIndex;
+  if (activeAudio.currentTime > 3) return currentQueueIndex;
   if (shuffleOn) {
     const pos = shuffleOrder.indexOf(currentQueueIndex);
     if (pos > 0) return shuffleOrder[pos - 1];
@@ -167,16 +191,19 @@ async function loadAndPlay(data) {
   }
   if (shuffleOn) buildShuffleOrder();
 
+  const ael = activeAudio;
   if (data.type === 'file') {
-    audio.src = fileUrl(data.path);
+    ael.src = fileUrl(data.path);
   } else if (data.type === 'stream') {
-    audio.src = data.url;
+    ael.src = data.url;
   } else {
     showToast('Error de reproducción', 'error');
     return false;
   }
 
-  await audio.play();
+  if (ael.paused) {
+    try { await ael.play(); } catch(e) { return false; }
+  }
   streamRetryCount = 0;
   isPlaying = true;
   updatePlayButtons(true);
@@ -229,11 +256,12 @@ async function playAtIndex(index) {
 async function togglePlay() {
   if (!currentSong) { showToast('Selecciona una canción primero'); return; }
   try {
-    if (audio.paused) {
-      await audio.play();
+    const ael = activeAudio;
+    if (ael.paused) {
+      await ael.play();
       isPlaying = true;
     } else {
-      audio.pause();
+      ael.pause();
       isPlaying = false;
     }
     updatePlayButtons(isPlaying);
@@ -244,16 +272,19 @@ async function togglePlay() {
 async function nextSong() {
   const nextIdx = getNextIndex();
   if (nextIdx < 0) { showToast('Fin de la cola'); return false; }
+  if (crossfadeDuration > 0 && !isCrossfading) {
+    return crossfadeToSong(nextIdx);
+  }
   return playAtIndex(nextIdx);
 }
 
 async function prevSong() {
-  if (audio.currentTime > 3 && currentSong) {
-    audio.currentTime = 0;
+  if (activeAudio.currentTime > 3 && currentSong) {
+    activeAudio.currentTime = 0;
     return true;
   }
   const prevIdx = getPrevIndex();
-  if (prevIdx === currentQueueIndex && audio.currentTime <= 3) return false;
+  if (prevIdx === currentQueueIndex && activeAudio.currentTime <= 3) return false;
   return playAtIndex(prevIdx);
 }
 
@@ -320,8 +351,8 @@ function seekFromClick(e) {
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
   const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  const pos = pct * (audio.duration || 0);
-  audio.currentTime = pos;
+  const pos = pct * (activeAudio.duration || 0);
+  activeAudio.currentTime = pos;
   pywebview.api.seek(pos);
 }
 
@@ -330,103 +361,123 @@ function seekMiniFromClick(e) {
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
   const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  audio.currentTime = pct * (audio.duration || 0);
+  activeAudio.currentTime = pct * (activeAudio.duration || 0);
 }
 
 async function setVolume(val) {
-  const v = parseInt(val) / 100;
-  audio.volume = Math.max(0, Math.min(1, v));
+  const v = Math.max(0, Math.min(1, parseInt(val) / 100));
+  audioA.volume = v;
+  audioB.volume = v;
   playerStatus.volume = parseInt(val);
   document.querySelectorAll('.volume-slider').forEach(s => { if (s.value != val) s.value = val; });
   try { await pywebview.api.setVolume(parseInt(val)); } catch (e) {}
 }
 
-// ===== Audio Events =====
 let lastLyricsTick = 0;
-audio.addEventListener('timeupdate', () => {
-  const pos = audio.currentTime || 0;
-  const dur = audio.duration || 0;
-  playerStatus.position = pos;
-  playerStatus.duration = dur;
 
-  const ct = $('currentTime');
-  const tt = $('totalTime');
-  const mct = $('miniCurrentTime');
-  const mtt = $('miniTotalTime');
-  if (ct) ct.textContent = formatTime(pos);
-  if (tt) tt.textContent = formatTime(dur);
-  if (mct) mct.textContent = formatTime(pos);
-  if (mtt) mtt.textContent = formatTime(dur);
+function setupAudioEvents(ael) {
+  ael.addEventListener('timeupdate', () => {
+    if (ael !== activeAudio) return;
+    const pos = ael.currentTime || 0;
+    const dur = ael.duration || 0;
+    playerStatus.position = pos;
+    playerStatus.duration = dur;
 
-  if (dur > 0) {
-    const pct = Math.min(100, (pos / dur) * 100) + '%';
-    const pf = $('progressFill');
-    const mpf = $('miniProgressFill');
-    if (pf) pf.style.width = pct;
-    if (mpf) mpf.style.width = pct;
-  }
+    const ct = $('currentTime');
+    const tt = $('totalTime');
+    const mct = $('miniCurrentTime');
+    const mtt = $('miniTotalTime');
+    if (ct) ct.textContent = formatTime(pos);
+    if (tt) tt.textContent = formatTime(dur);
+    if (mct) mct.textContent = formatTime(pos);
+    if (mtt) mtt.textContent = formatTime(dur);
 
-  const now = performance.now();
-  if (now - lastLyricsTick > 80) {
-    lastLyricsTick = now;
-    updateLyricsDisplay(pos);
-  }
-});
+    if (dur > 0) {
+      const pct = Math.min(100, (pos / dur) * 100) + '%';
+      const pf = $('progressFill');
+      const mpf = $('miniProgressFill');
+      if (pf) pf.style.width = pct;
+      if (mpf) mpf.style.width = pct;
+    }
 
-audio.addEventListener('play', () => {
-  isPlaying = true;
-  playerStatus.state = 'playing';
-  updatePlayButtons(true);
-});
-
-audio.addEventListener('pause', () => {
-  isPlaying = false;
-  playerStatus.state = 'paused';
-  updatePlayButtons(false);
-});
-
-audio.addEventListener('ended', async () => {
-  if (repeatMode === 'one' && currentSong) {
-    audio.currentTime = 0;
-    await audio.play();
-    return;
-  }
-  crossfadeToNext(async () => {
-    await nextSong();
+    const now = performance.now();
+    if (now - lastLyricsTick > 80) {
+      lastLyricsTick = now;
+      updateLyricsDisplay(pos);
+    }
   });
-});
 
-audio.addEventListener('error', async () => {
-  if (!currentSong || streamRetryCount >= 2) {
-    showToast('Error de reproducción', 'error');
+  ael.addEventListener('play', () => {
+    if (ael !== activeAudio) return;
+    isPlaying = true;
+    playerStatus.state = 'playing';
+    updatePlayButtons(true);
+  });
+
+  ael.addEventListener('pause', () => {
+    if (ael !== activeAudio) return;
+    isPlaying = false;
+    playerStatus.state = 'paused';
     updatePlayButtons(false);
-    return;
-  }
-  streamRetryCount++;
-  try {
-    const data = await pywebview.api.refreshStreamUrl(currentSong.id);
-    if (data?.type === 'stream' || data?.type === 'file') {
-      audio.src = data.type === 'stream' ? data.url : data.path;
-      await audio.play();
+  });
+
+  ael.addEventListener('ended', async () => {
+    if (ael !== activeAudio) return;
+    if (repeatMode === 'one' && currentSong) {
+      ael.currentTime = 0;
+      await ael.play();
       return;
     }
-  } catch (e) {}
-  showToast('Error de reproducción', 'error');
-  updatePlayButtons(false);
-});
+    const nextIdx = getNextIndex();
+    if (nextIdx < 0) {
+      isPlaying = false;
+      updatePlayButtons(false);
+      return;
+    }
+    if (crossfadeDuration > 0 && !isCrossfading) {
+      await crossfadeToSong(nextIdx);
+    } else {
+      await playAtIndex(nextIdx);
+    }
+  });
 
-audio.addEventListener('loadedmetadata', () => {
-  playerStatus.duration = audio.duration || 0;
-  const dur = Math.floor(audio.duration || 0);
-  const tt = $('totalTime');
-  const mtt = $('miniTotalTime');
-  const t = formatTime(dur);
-  if (tt) tt.textContent = t;
-  if (mtt) mtt.textContent = t;
-  if (currentSong && dur > 0) {
-    pywebview.api.updateSongDuration(currentSong.id, dur).catch(() => {});
-  }
-});
+  ael.addEventListener('error', async () => {
+    if (ael !== activeAudio) return;
+    if (!currentSong || streamRetryCount >= 2) {
+      showToast('Error de reproducción', 'error');
+      updatePlayButtons(false);
+      return;
+    }
+    streamRetryCount++;
+    try {
+      const data = await pywebview.api.refreshStreamUrl(currentSong.id);
+      if (data?.type === 'stream' || data?.type === 'file') {
+        ael.src = data.type === 'stream' ? data.url : data.path;
+        await ael.play();
+        return;
+      }
+    } catch (e) {}
+    showToast('Error de reproducción', 'error');
+    updatePlayButtons(false);
+  });
+
+  ael.addEventListener('loadedmetadata', () => {
+    if (ael !== activeAudio) return;
+    playerStatus.duration = ael.duration || 0;
+    const dur = Math.floor(ael.duration || 0);
+    const tt = $('totalTime');
+    const mtt = $('miniTotalTime');
+    const t = formatTime(dur);
+    if (tt) tt.textContent = t;
+    if (mtt) mtt.textContent = t;
+    if (currentSong && dur > 0) {
+      pywebview.api.updateSongDuration(currentSong.id, dur).catch(() => {});
+    }
+  });
+}
+
+setupAudioEvents(audioA);
+setupAudioEvents(audioB);
 
 function updatePlayButtons(playing) {
   const paths = playing
@@ -461,7 +512,6 @@ function updateNowPlaying(song) {
   updateLikeButtons(undefined, song.id);
 }
 
-// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea')) return;
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
@@ -472,7 +522,6 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') toggleRepeat();
 });
 
-// ===== Download =====
 async function downloadSong(songId) {
   try {
     await pywebview.api.downloadSong(songId);
@@ -481,7 +530,6 @@ async function downloadSong(songId) {
   } catch (e) { showToast('Error al descargar', 'error'); }
 }
 
-// ===== Add to Playlist =====
 let addToPlaylistTargetId = null;
 
 async function showAddToPlaylist(songId) {
