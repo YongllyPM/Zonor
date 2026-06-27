@@ -46,6 +46,7 @@ Source: "setup.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "gen_icon.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installer.iss"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "zonor.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Python modules
 Source: "app\*.py"; DestDir: "{app}\app"; Flags: ignoreversion
@@ -115,58 +116,60 @@ end;
 function FindPythonw: string;
 var
   PythonPath: string;
+  ResultCode: Integer;
 begin
-  // Try pythonw.exe in PATH first
-  if RegQueryStringValue(HKLM, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) or
+  // Try common Python 3 install locations
+  PythonPath := ExpandConstant('{autopf}\Python313\');
+  if FileExists(PythonPath + 'pythonw.exe') then begin
+    Result := PythonPath + 'pythonw.exe'; exit;
+  end;
+
+  PythonPath := ExpandConstant('{autopf}\Python312\');
+  if FileExists(PythonPath + 'pythonw.exe') then begin
+    Result := PythonPath + 'pythonw.exe'; exit;
+  end;
+
+  PythonPath := ExpandConstant('{autopf}\Python311\');
+  if FileExists(PythonPath + 'pythonw.exe') then begin
+    Result := PythonPath + 'pythonw.exe'; exit;
+  end;
+
+  // Check from registry
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) or
      RegQueryStringValue(HKCU, 'SOFTWARE\Python\PythonCore\3.*\InstallPath', '', PythonPath) then
   begin
-    if FileExists(PythonPath + 'pythonw.exe') then
-    begin
-      Result := PythonPath + 'pythonw.exe';
-      exit;
+    if FileExists(PythonPath + 'pythonw.exe') then begin
+      Result := PythonPath + 'pythonw.exe'; exit;
     end;
   end;
 
-  // Fallback: search PATH
-  if ExecAsOriginalUser('where', 'pythonw', '', 0, ewWaitUntilTerminated, Result) then
-  begin
-    Result := Trim(Result);
-    if Result <> '' then
-      exit;
+  // Check %LOCALAPPDATA%\Programs\Python (Microsoft Store installs)
+  PythonPath := ExpandConstant('{localappdata}\Programs\Python\Python313\');
+  if FileExists(PythonPath + 'pythonw.exe') then begin
+    Result := PythonPath + 'pythonw.exe'; exit;
+  end;
+  PythonPath := ExpandConstant('{localappdata}\Programs\Python\Python312\');
+  if FileExists(PythonPath + 'pythonw.exe') then begin
+    Result := PythonPath + 'pythonw.exe'; exit;
   end;
 
-  // Last resort
+  // Fallback: just use PATH
   Result := 'pythonw.exe';
 end;
 
 function InitializeSetup: Boolean;
-var
-  ErrorMsg: string;
-  PythonVer: string;
-  TmpResult: boolean;
 begin
   Result := True;
 
-  // Check if Python is installed
-  if ExecAsOriginalUser('python', '--version', '', 0, ewWaitUntilTerminated, PythonVer) then
+  // Just check Python exists, don't capture version to avoid stdout issues
+  if not FileExists(AddBackslash(ExtractFilePath(FindPythonw())) + 'pythonw.exe') then
   begin
-    PythonVer := Trim(PythonVer);
-    if Pos('Python 3.', PythonVer) = 0 then
-    begin
-      ErrorMsg := 'Python 3 no encontrado.' + #13#10 +
-                  'Descarga Python 3.8+ desde python.org antes de continuar.' + #13#10#13#10 +
-                  'Se abrira la pagina de descarga.';
-      if MsgBox(ErrorMsg, mbError, MB_OKCANCEL) = IDOK then
-        ExecAsOriginalUser('cmd', '/c start https://www.python.org/downloads/', '', 0, ewNoWait);
-    end;
-  end
-  else
-  begin
-    ErrorMsg := 'Python no esta instalado.' + #13#10 +
-                'Descarga Python 3.8+ desde python.org antes de continuar.' + #13#10#13#10 +
-                'Se abrira la pagina de descarga.';
-    if MsgBox(ErrorMsg, mbError, MB_OKCANCEL) = IDOK then
-      ExecAsOriginalUser('cmd', '/c start https://www.python.org/downloads/', '', 0, ewNoWait);
+    MsgBox('No se encontro Python 3.' + #13#10#13#10 +
+           'Descarga Python 3.11+ desde python.org e instala con "Add to PATH".' + #13#10 +
+           'O puedes instalarlo desde Microsoft Store.' + #13#10#13#10 +
+           'La instalacion continuara de todas formas.',
+           mbInformation, MB_OK);
   end;
 
   // Find pythonw.exe
