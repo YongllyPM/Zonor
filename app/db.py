@@ -211,6 +211,13 @@ def get_playlist_songs(playlist_id):
     return [dict(r) for r in rows]
 
 
+def clear_playlist_songs(playlist_id):
+    conn = get_conn()
+    conn.execute("DELETE FROM playlist_songs WHERE playlist_id = ?", (playlist_id,))
+    conn.commit()
+    conn.close()
+
+
 def add_song_to_playlist(playlist_id, song_id, position=None):
     conn = get_conn()
     if position is None:

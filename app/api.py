@@ -283,16 +283,19 @@ class API:
         return local
 
     def get_playlist_songs(self, playlist_id):
-        local = db.get_playlist_songs(playlist_id)
-        if not local and 'sync_' in playlist_id:
+        if 'sync_' in playlist_id and self.ytmusic.is_authenticated():
             sync_id = playlist_id.replace('sync_', '')
-            if self.ytmusic.is_authenticated():
+            try:
                 songs = self.ytmusic.get_playlist(sync_id)
-                for s in songs:
-                    db.save_song(s)
-                    db.add_song_to_playlist(playlist_id, s['id'])
-                return songs
-        return local
+                if songs:
+                    db.clear_playlist_songs(playlist_id)
+                    for s in songs:
+                        db.save_song(s)
+                        db.add_song_to_playlist(playlist_id, s['id'])
+                    return songs
+            except Exception:
+                pass
+        return db.get_playlist_songs(playlist_id)
 
     def create_playlist(self, name, description=''):
         pl_id = f"local_{int(time.time())}"

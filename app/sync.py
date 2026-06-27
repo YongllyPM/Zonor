@@ -45,19 +45,21 @@ class SyncService:
             remote_by_id = {p['id']: p for p in remote_playlists}
 
             for rp in remote_playlists:
+                song_count_hint = rp.get('song_count', 0)
                 if rp['id'] in local_by_sync:
                     lp = local_by_sync[rp['id']]
-                    if rp['name'] != lp['name'] or rp.get('song_count', 0) != lp.get('song_count', 0):
-                        db.save_playlist({
-                            'id': lp['id'],
-                            'name': rp['name'],
-                            'description': rp.get('description', ''),
-                            'thumbnail': rp.get('thumbnail', ''),
-                            'sync_id': rp['id']
-                        })
-                        remote_songs = self.ytmusic.get_playlist(rp['id'])
-                        self._sync_playlist_songs(lp['id'], remote_songs)
-                        self._emit('playlist_updated', {'playlist_id': lp['id']})
+                    db.save_playlist({
+                        'id': lp['id'],
+                        'name': rp['name'],
+                        'description': rp.get('description', ''),
+                        'thumbnail': rp.get('thumbnail', ''),
+                        'song_count': song_count_hint,
+                        'sync_id': rp['id']
+                    })
+                    remote_songs = self.ytmusic.get_playlist(rp['id'])
+                    print(f"Sync: fetched {len(remote_songs)} songs for '{rp['name']}' (expected ~{song_count_hint})")
+                    self._sync_playlist_songs(lp['id'], remote_songs, remote_count_hint=song_count_hint)
+                    self._emit('playlist_updated', {'playlist_id': lp['id']})
                 else:
                     if rp['id'] in local_by_home_id:
                         existing_id = local_by_home_id[rp['id']]
@@ -66,6 +68,7 @@ class SyncService:
                             'name': rp['name'],
                             'description': rp.get('description', ''),
                             'thumbnail': rp.get('thumbnail', ''),
+                            'song_count': song_count_hint,
                             'sync_id': rp['id']
                         })
                         pl_id = existing_id
@@ -76,9 +79,12 @@ class SyncService:
                             'name': rp['name'],
                             'description': rp.get('description', ''),
                             'thumbnail': rp.get('thumbnail', ''),
+                            'song_count': song_count_hint,
                             'sync_id': rp['id']
                         })
                     remote_songs = self.ytmusic.get_playlist(rp['id'])
+                    print(f"Sync: fetched {len(remote_songs)} songs for NEW '{rp['name']}' (expected ~{song_count_hint})")
+                    db.clear_playlist_songs(pl_id)
                     for song in remote_songs:
                         db.save_song(song)
                         db.add_song_to_playlist(pl_id, song['id'])
@@ -94,7 +100,7 @@ class SyncService:
         except Exception as e:
             print(f"Playlist sync error: {e}")
 
-    def _sync_playlist_songs(self, local_playlist_id, remote_songs):
+    def _sync_playlist_songs(self, local_playlist_id, remote_songs, remote_count_hint=None):
         existing = db.get_playlist_songs(local_playlist_id)
         existing_ids = {s['id'] for s in existing}
         remote_ids = {s['id'] for s in remote_songs}
@@ -105,6 +111,10 @@ class SyncService:
                 db.add_song_to_playlist(local_playlist_id, song['id'])
             else:
                 db.save_song(song)
+
+        if remote_count_hint and len(remote_songs) < remote_count_hint * 0.9:
+            print(f"Sync: skipping deletion for {local_playlist_id} — got {len(remote_songs)} of ~{remote_count_hint} songs")
+            return
 
         for es in existing:
             if es['id'] not in remote_ids:
