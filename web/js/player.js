@@ -213,9 +213,11 @@ async function loadAndPlay(data) {
   return true;
 }
 
-async function playSong(songId) {
+async function playSong(songId, queue) {
   try {
-    const data = await pywebview.api.playSong(songId);
+    const data = queue
+      ? await pywebview.api.playSong(songId, queue)
+      : await pywebview.api.playSong(songId);
     if (!data) { showToast('No se puede reproducir esta canción', 'error'); return false; }
     currentQueue = data.queue || [data.song];
     currentQueueIndex = data.queue_index ?? currentQueue.findIndex(s => s.id === songId);
@@ -236,7 +238,7 @@ async function playPlaylist(playlistId, startIndex) {
     currentQueue = songs;
     currentQueueIndex = startIndex;
     if (shuffleOn) buildShuffleOrder();
-    await pywebview.api.playSong(songs[startIndex].id);
+    await pywebview.api.playSong(songs[startIndex].id, songs);
     return playAtIndex(startIndex);
   } catch (e) { showToast('Error', 'error'); }
 }

@@ -329,7 +329,7 @@ async function playHomePlaylist(playlistId) {
     currentQueue = songs;
     currentQueueIndex = 0;
     if (shuffleOn) buildShuffleOrder();
-    await pywebview.api.playSong(songs[0].id);
+    await pywebview.api.playSong(songs[0].id, songs);
     return playAtIndex(0);
   } catch (e) { showToast('No se pudo abrir la playlist', 'error'); }
 }
@@ -372,7 +372,7 @@ function renderSongGrid(container, songs, startIdx = 0) {
         <button class="btn-icon btn-like${liked}" data-song-id="${song.id}" onclick="event.stopPropagation();toggleLike('${song.id}')" title="Me gusta">
           <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         </button>
-        <button class="btn-icon" onclick="event.stopPropagation();playSong('${song.id}')" title="Reproducir">
+        <button class="btn-icon play-btn" data-song-id="${song.id}" title="Reproducir">
           <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
         </button>
         <button class="btn-icon" onclick="event.stopPropagation();showAddToPlaylist('${song.id}')" title="Agregar a playlist">
@@ -383,7 +383,9 @@ function renderSongGrid(container, songs, startIdx = 0) {
         </button>
       </div>
     `;
-    div.onclick = () => playSong(song.id);
+    div.onclick = () => playSong(song.id, songs);
+    const playBtn = div.querySelector('.play-btn');
+    if (playBtn) playBtn.onclick = (e) => { e.stopPropagation(); playSong(song.id, songs); };
     if (currentSong && song.id === currentSong.id) div.classList.add('active');
     container.appendChild(div);
   });
