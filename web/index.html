@@ -46,6 +46,19 @@
           <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
           <span>Descargas</span>
         </a>
+        <div class="sidebar-section-title">Catálogos</div>
+        <a class="nav-item" data-view="catalog_yt" onclick="switchView('catalog_yt')">
+          <span class="platform-badge youtube" style="font-size:10px;padding:1px 6px">YT</span>
+          <span>YouTube Music</span>
+        </a>
+        <a class="nav-item" data-view="catalog_deezer" onclick="switchView('catalog_deezer')">
+          <span class="platform-badge deezer" style="font-size:10px;padding:1px 6px">DZ</span>
+          <span>Deezer</span>
+        </a>
+        <a class="nav-item" data-view="catalog_apple" onclick="switchView('catalog_apple')">
+          <span class="platform-badge apple" style="font-size:10px;padding:1px 6px">AM</span>
+          <span>Apple Music</span>
+        </a>
       </nav>
       <div class="sidebar-playlists" id="sidebarPlaylists">
         <div class="sidebar-section-title">Tus Playlists</div>
@@ -146,6 +159,14 @@
               <h2>Tendencia</h2>
               <div class="song-list" id="homeTrendingGrid"></div>
             </section>
+            <section id="homeDeezerSection" style="display:none">
+              <h2>Tendencia en Deezer</h2>
+              <div class="song-list" id="homeDeezerGrid"></div>
+            </section>
+            <section id="homeAppleSection" style="display:none">
+              <h2>Tendencia en Apple Music</h2>
+              <div class="song-list" id="homeAppleGrid"></div>
+            </section>
             <section id="homeTopSection" style="display:none">
               <h2>Lo más popular</h2>
               <div class="song-list" id="homeTopGrid"></div>
@@ -165,7 +186,7 @@
           <div class="search-container">
             <div class="search-bar">
               <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-              <input type="text" id="searchInput" placeholder="Buscar canciones, artistas, álbumes..." oninput="debounceSearch()" autocomplete="off">
+              <input type="text" id="searchInput" placeholder="Buscar canciones, artistas, álbumes..." oninput="debounceSearch()" onfocus="if(!this.value.trim()) showSearchHistory()" autocomplete="off">
             </div>
             <div id="searchSuggestions" class="search-suggestions" style="display:none"></div>
           </div>
@@ -203,6 +224,10 @@
         <div id="view-downloads" class="view">
           <div class="view-header">
             <h1>Descargas</h1>
+            <button class="btn-text" onclick="openDownloadsFolder()">
+              <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path fill="currentColor" d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+              Abrir carpeta
+            </button>
           </div>
           <div id="downloadsContent" class="song-list"></div>
         </div>
@@ -234,6 +259,20 @@
             <h3 style="margin-top:16px">Álbumes y sencillos</h3>
             <div id="artistAlbumsList" class="artists-grid" style="margin-top:8px"></div>
           </div>
+        </div>
+
+        <div id="view-catalog" class="view" style="display:none">
+          <div class="view-header">
+            <h1 id="catalogTitle">Catálogo</h1>
+            <button class="btn-text" id="catalogRefresh" onclick="loadPlatformCatalog()">Actualizar</button>
+          </div>
+          <div id="catalogLoading" style="display:none">
+            <div class="home-loading">
+              <div class="lyrics-spinner"></div>
+              <span>Cargando catálogo...</span>
+            </div>
+          </div>
+          <div id="catalogGrid" class="song-list"></div>
         </div>
 
         <div id="view-player" class="view">
@@ -284,7 +323,16 @@
             </div>
             <div class="player-right">
               <div class="lyrics-section">
-                <h3>Letra</h3>
+                <div class="lyrics-header">
+                  <h3>Letra</h3>
+                  <div class="lyrics-actions">
+                    <button class="btn-lyrics" id="btnEditLyrics" onclick="toggleEditLyrics()" title="Editar letra localmente"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+                    <button class="btn-lyrics" id="btnCorrectLyrics" onclick="showCorrectDialog()" title="Corregir letra y enviar a LRCLib"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Corregir</button>
+                    <button class="btn-lyrics" id="btnSyncLyrics" onclick="openSyncDialog()" title="Buscar letra sincronizada en LRCLib"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Sincronizar</button>
+                    <button class="btn-lyrics" id="btnAiLyrics" onclick="showAiWarning()" title="Transcribir letra con IA local (Whisper)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> IA</button>
+                    <button class="btn-lyrics" id="btnTranslateLyrics" onclick="translateCurrentLyrics()" title="Traducir letra al idioma configurado"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2v3"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg> Traducir</button>
+                  </div>
+                </div>
                 <div id="lyricsContainer" class="lyrics-container">
                   <div class="lyrics-placeholder">
                     <svg viewBox="0 0 24 24" width="48" height="48" opacity="0.3"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
@@ -337,8 +385,26 @@
             <div class="settings-section">
               <h3>Audio</h3>
               <div class="setting-row">
-                <label>Calidad de audio</label>
-                <select id="audioQuality" class="setting-input" onchange="saveAllSettings()">
+                <label>Calidad YouTube</label>
+                <select id="audioQualityYoutube" class="setting-input" onchange="saveAllSettings()">
+                  <option value="best">Mejor calidad</option>
+                  <option value="high">Alta (192k)</option>
+                  <option value="medium">Media (128k)</option>
+                  <option value="low">Baja (64k)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label>Calidad Deezer</label>
+                <select id="audioQualityDeezer" class="setting-input" onchange="saveAllSettings()">
+                  <option value="best">Mejor calidad</option>
+                  <option value="high">Alta (192k)</option>
+                  <option value="medium">Media (128k)</option>
+                  <option value="low">Baja (64k)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label>Calidad Apple Music</label>
+                <select id="audioQualityApple" class="setting-input" onchange="saveAllSettings()">
                   <option value="best">Mejor calidad</option>
                   <option value="high">Alta (192k)</option>
                   <option value="medium">Media (128k)</option>
@@ -352,6 +418,32 @@
                   <option value="m4a">M4A (AAC)</option>
                   <option value="opus">Opus</option>
                   <option value="flac">FLAC</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Catálogo</h3>
+              <div class="setting-row">
+                <label></label>
+                <p class="text-muted" style="font-size:12px;margin:0">La búsqueda combina automáticamente <b>YouTube Music</b> (YT Music), <b>Deezer</b> y <b>Apple Music</b>. No necesitas cuentas ni configuración. Para reproducir o descargar una canción de Deezer/Apple Music, Zonor lo busca automáticamente en YouTube Music.</p>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Letra</h3>
+              <div class="setting-row">
+                <label>Idioma de traducción</label>
+                <select id="translationLang" class="setting-input" onchange="saveAllSettings()">
+                  <option value="es">Español</option>
+                  <option value="en">English</option>
+                  <option value="pt">Português</option>
+                  <option value="fr">Français</option>
+                  <option value="it">Italiano</option>
+                  <option value="de">Deutsch</option>
+                  <option value="ja">日本語</option>
+                  <option value="ko">한국어</option>
+                  <option value="zh">中文</option>
+                  <option value="ru">Русский</option>
+                  <option value="ar">العربية</option>
                 </select>
               </div>
             </div>
@@ -385,6 +477,36 @@
               <div class="setting-row">
                 <label>Descargar Me gusta</label>
                 <button class="btn-text" onclick="downloadAllLiked()">Descargar todas</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h3>Datos</h3>
+              <div class="setting-row">
+                <label>Exportar todos los datos (biblioteca, playlists, descargas, ajustes y cuenta)</label>
+                <button class="btn-text" onclick="exportData()">Exportar datos</button>
+              </div>
+              <div class="setting-row">
+                <label>Restaurar desde un archivo exportado</label>
+                <button class="btn-text" onclick="importData()">Importar datos</button>
+              </div>
+              <div class="setting-row">
+                <label>Copias de seguridad automáticas</label>
+                <label class="switch">
+                  <input type="checkbox" id="backupEnabled" onchange="saveBackupSettings()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <label>Cada</label>
+                <select id="backupInterval" class="setting-input" onchange="saveBackupSettings()">
+                  <option value="daily">Día</option>
+                  <option value="weekly">Semana</option>
+                  <option value="monthly">Mes</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label>Última copia: <span class="text-muted" id="lastBackupLabel">—</span></label>
+                <button class="btn-text" onclick="backupNow()">Crear copia ahora</button>
               </div>
             </div>
             <div class="settings-section">
@@ -624,6 +746,165 @@
         <div class="theme-editor-actions">
           <input type="text" id="themeNameInput" class="setting-input" placeholder="Nombre del tema" style="flex:1">
           <button class="btn-primary" onclick="saveCustomTheme()">Guardar tema</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync Lyrics Dialog -->
+  <div id="syncLyricsDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'syncLyricsDialog')">
+    <div class="dialog dialog-lg dialog-sync" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Sincronizar letra</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'syncLyricsDialog')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="sync-search-row">
+          <input type="text" id="syncSearchArtist" placeholder="Artista" class="input">
+          <input type="text" id="syncSearchTitle" placeholder="Título" class="input">
+          <button class="btn-primary" onclick="performLyricsSearch()">Buscar</button>
+        </div>
+        <div class="sync-results" id="syncResults">
+          <p class="text-muted">Busca una canción para ver resultados de LRCLib</p>
+        </div>
+        <div class="sync-preview" id="syncPreview" style="display:none">
+          <h4>Vista previa</h4>
+          <pre id="syncPreviewText"></pre>
+          <div class="sync-preview-actions">
+            <label class="checkbox-label">
+              <input type="checkbox" id="syncSubmitToLrclib">
+              También enviar a LRCLib como corrección
+            </label>
+            <div class="sync-preview-buttons">
+              <button class="btn-secondary" onclick="hideSyncPreview()">Cancelar</button>
+              <button class="btn-primary" onclick="acceptSyncResult()" id="btnAcceptSync">Aceptar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correct Lyrics Dialog -->
+  <div id="correctLyricsDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'correctLyricsDialog')">
+    <div class="dialog dialog-sm" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Corregir letra</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'correctLyricsDialog')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <p class="text-muted" style="margin-bottom:8px">¿Qué tipo de corrección deseas aplicar?</p>
+        <button class="btn-primary btn-full" onclick="autoCorrectLyrics()" style="margin-bottom:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Auto-corregir
+        </button>
+        <p class="text-muted" style="font-size:12px;margin-bottom:12px">Buscará la letra automáticamente en LRCLib y la reemplazará si encuentra una mejor</p>
+        <button class="btn-secondary btn-full" onclick="semiManualCorrect()" style="margin-bottom:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Corrección semi-manual
+        </button>
+        <p class="text-muted" style="font-size:12px">Pega la letra desde cualquier fuente (web, TXT, LRC). El sistema sincronizará automáticamente si no tiene tiempos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Semi-Manual Correction Dialog -->
+  <div id="semiManualDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'semiManualDialog')">
+    <div class="dialog dialog-lg dialog-semi" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Corrección semi-manual</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'semiManualDialog')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <p class="text-muted" style="font-size:13px">Pega la letra desde cualquier fuente. Si tiene formato LRC (<code>[mm:ss.xx]</code>) se respetan los tiempos. Si es texto plano, se sincronizará automáticamente.</p>
+        <div class="semi-recommend" id="semiRecommend">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span id="semiRecommendText">Busca en tu navegador: <strong>letra de canción</strong></span>
+          <button class="btn-copy-search" id="btnCopySearch" onclick="copySemiRecommend()" title="Copiar búsqueda">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <div class="semi-links">
+          <span style="font-size:12px;color:var(--text-muted)">Sitios recomendados:</span>
+          <a href="https://www.letras.com/" target="_blank" class="semi-link" title="letras.com"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> letras.com</a>
+          <a href="https://www.musixmatch.com/es/descubre" target="_blank" class="semi-link" title="Musixmatch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Musixmatch</a>
+          <a href="https://www.musica.com/" target="_blank" class="semi-link" title="musica.com"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> musica.com</a>
+        </div>
+        <textarea id="semiManualTextarea" class="semi-textarea" placeholder="Pega aquí la letra (con o sin tiempos LRC)...&#10;&#10;Ejemplo con tiempos:&#10;[00:12.00]Primera línea&#10;[00:16.50]Segunda línea&#10;&#10;Ejemplo sin tiempos:&#10;Primera línea&#10;Segunda línea" oninput="semiAutoPreview()"></textarea>
+        <div class="semi-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="semiAutoSync" checked>
+            Sincronizar automáticamente (distribuir tiempos uniformemente) si no hay timestamps
+          </label>
+          <button class="btn-secondary btn-sm" onclick="semiPreviewLyrics()" style="font-size:12px">Previsualizar</button>
+        </div>
+        <div class="semi-preview" id="semiPreview" style="display:none">
+          <h4>Vista previa (<span id="semiLineCount">0</span> líneas)</h4>
+          <div class="semi-preview-lines" id="semiPreviewLines"></div>
+          <div class="semi-preview-actions">
+            <label class="checkbox-label">
+              <input type="checkbox" id="semiSubmitToLrclib">
+              También enviar a LRCLib como corrección para todos los usuarios
+            </label>
+            <div class="semi-preview-buttons">
+              <button class="btn-secondary" onclick="closeDialog(event, 'semiManualDialog')">Cancelar</button>
+              <button class="btn-primary" onclick="semiSaveLocalOnly()">Guardar localmente</button>
+              <button class="btn-primary" style="background:var(--accent)" onclick="semiSaveAndSubmit()">Guardar y enviar a LRCLib</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Transcription Warning Dialog -->
+  <div id="aiWarningDialog" class="dialog-overlay" style="display:none" onclick="closeDialog(event, 'aiWarningDialog')">
+    <div class="dialog" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Letras con IA (Whisper)</h2>
+        <button class="btn-icon" onclick="closeDialog(event, 'aiWarningDialog')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="dialog-body" style="gap:12px">
+        <div class="ai-warning-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+        </div>
+        <p style="font-size:14px;font-weight:500;text-align:center;margin:0">Transcripción automática con Whisper (OpenAI)</p>
+        <div class="ai-warning-items">
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 16 12 12 12 8"/><line x1="12" y1="16" x2="16" y2="16"/></svg><span><strong>Tiempo estimado:</strong> 30s – 5 min según tu hardware</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span><strong>Descarga única:</strong> ~1.5GB (modelo Whisper <code>base</code>) en primera ejecución</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span><strong>Instalación automática:</strong> Si falta whisper o ffmpeg se descargan solos la primera vez</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span><strong>Hardware:</strong> CPU funciona (lento). GPU NVIDIA (CUDA) mucho más rápido</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span><strong>Privacidad:</strong> 100% local. No se envía nada a internet</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>Requisito:</strong> ffmpeg debe estar instalado y en el PATH del sistema</span></div>
+          <div class="ai-warning-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>Nota:</strong> Si falla, se usará LRCLib/syncedlyrics como respaldo</span></div>
+        </div>
+        <div class="ai-warning-actions">
+          <button class="btn-secondary" onclick="closeDialog(event, 'aiWarningDialog')">Cancelar</button>
+          <button class="btn-primary" id="btnStartTranscribe" onclick="startTranscription()">Comenzar transcripción</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Transcription Progress Dialog -->
+  <div id="aiProgressDialog" class="dialog-overlay" style="display:none">
+    <div class="dialog dialog-sm" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Transcribiendo...</h2>
+      </div>
+      <div class="dialog-body" style="align-items:center;gap:16px;padding:32px 20px">
+        <div class="lyrics-spinner" style="width:40px;height:40px;border-width:4px"></div>
+        <div id="aiProgressStatus" style="font-size:14px;text-align:center">Iniciando...</div>
+        <div class="ai-progress-bar">
+          <div class="ai-progress-fill" id="aiProgressFill" style="width:0%"></div>
         </div>
       </div>
     </div>

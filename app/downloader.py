@@ -15,10 +15,24 @@ class DownloadServer:
         self.port = None
         self._server = None
         self._thread = None
+        self.stream_resolver = None
+
+    def set_stream_resolver(self, resolver):
+        self.stream_resolver = resolver
+
+    def _log_process(self, msg):
+        try:
+            log_file = Path(os.environ.get('APPDATA', '')) / 'Zonor' / 'download.log'
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(f"{msg}\n")
+        except Exception:
+            pass
 
     def start(self):
         import http.server
         import socketserver
+        import urllib.request
 
         download_dir = str(self.download_dir)
 
@@ -33,8 +47,116 @@ class DownloadServer:
                 self.send_header('Access-Control-Allow-Origin', '*')
                 super().end_headers()
 
+            def _proxy_stream(self, suffix):
+                import urllib.error
+                handler = self.server
+                server = getattr(handler, 'download_server', None)
+                if not server or not server.stream_resolver:
+                    self.send_error(404)
+                    return
+                video_id = suffix.strip()
+                if not video_id:
+                    self.send_error(400)
+                    return
+                server._log_process(f"[stream] GET /stream/{video_id} range={self.headers.get('Range')}")
+                try:
+                    remote = server.stream_resolver(video_id)
+                except Exception as e:
+                    server._log_process(f"[stream] resolve FAILED {video_id}: {e}")
+                    self.send_error(502, message='stream resolve failed')
+                    return
+                if not remote:
+                    server._log_process(f"[stream] resolve EMPTY {video_id}")
+                    self.send_error(404)
+                    return
+                headers = {
+                    'User-Agent': 'Mozilla/5.0',
+                    'Accept': 'audio/webm,audio/ogg,audio/mp4,*/*;q=0.8',
+                }
+                rng = self.headers.get('Range')
+                if not rng:
+                    rng = 'bytes=0-'
+                rng = self._clamp_range(rng)
+                if rng:
+                    headers['Range'] = rng
+                req = urllib.request.Request(remote, headers=headers, method='GET')
+                try:
+                    upstream = urllib.request.urlopen(req, timeout=30)
+                    server._log_process(f"[stream] upstream {upstream.status} {upstream.headers.get('Content-Type')} {upstream.headers.get('Content-Range')}")
+                except urllib.error.HTTPError as e:
+                    if e.code == 403 and self.headers.get('Range') and self.headers.get('Range').rstrip().endswith('-'):
+                        fallback = 'bytes=0-1048575'
+                        headers2 = dict(headers)
+                        headers2['Range'] = fallback
+                        try:
+                            req2 = urllib.request.Request(remote, headers=headers2, method='GET')
+                            upstream = urllib.request.urlopen(req2, timeout=30)
+                            server._log_process(f"[stream] upstream 403-retry {upstream.status} {upstream.headers.get('Content-Type')} {upstream.headers.get('Content-Range')}")
+                        except Exception as e2:
+                            server._log_process(f"[stream] upstream 403-retry FAIL: {e2}")
+                            self.send_error(502)
+                            return
+                    else:
+                        server._log_process(f"[stream] upstream http {e.code} for {video_id}")
+                        self.send_error(502 if e.code == 502 else e.code if e.code in (403, 404) else 502)
+                        return
+                except Exception as e:
+                    server._log_process(f"[stream] upstream err {e} for {video_id}")
+                    self.send_error(502)
+                    return
+                try:
+                    self.send_response(upstream.status)
+                    ctype = upstream.headers.get('Content-Type') or 'application/octet-stream'
+                    self.send_header('Content-Type', ctype)
+                    if upstream.headers.get('Content-Length'):
+                        self.send_header('Content-Length', upstream.headers['Content-Length'])
+                    if upstream.headers.get('Content-Range'):
+                        self.send_header('Content-Range', upstream.headers['Content-Range'])
+                    if upstream.headers.get('Accept-Ranges'):
+                        self.send_header('Accept-Ranges', upstream.headers['Accept-Ranges'])
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    while True:
+                        chunk = upstream.read(65536)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                except Exception:
+                    pass
+                finally:
+                    upstream.close()
+
+            def _clamp_range(self, rng):
+                if not rng:
+                    return None
+                rng = rng.strip()
+                m = re.match(r'^bytes=(\d*)-(\d*)$', rng)
+                if not m:
+                    return None
+                start, end = m.group(1), m.group(2)
+                if start == '' and end == '':
+                    return 'bytes=0-1048575'
+                if end == '':
+                    return f'bytes={start}-{int(start) + 1048575}'
+                return f'bytes={start or 0}-{end}'
+
+            def do_GET(self):
+                path = self.path.split('?', 1)[0]
+                if path.startswith('/stream/'):
+                    self._proxy_stream(path[len('/stream/'):])
+                    return
+                return super().do_GET()
+
+            def do_HEAD(self):
+                path = self.path.split('?', 1)[0]
+                if path.startswith('/stream/'):
+                    self._proxy_stream(path[len('/stream/'):])
+                    return
+                return super().do_HEAD()
+
         try:
             self._server = socketserver.TCPServer(("127.0.0.1", 0), _Handler)
+            self._server.download_server = self
             self.port = self._server.server_address[1]
             self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
             self._thread.start()
@@ -48,6 +170,11 @@ class DownloadServer:
     def url_for(self, file_path):
         filename = os.path.basename(file_path)
         return f"http://127.0.0.1:{self.port}/{filename}"
+
+    def url_for_stream(self, video_id):
+        if not self.port:
+            return None
+        return f"http://127.0.0.1:{self.port}/stream/{video_id}"
 
 
 class Downloader:
@@ -151,6 +278,28 @@ class Downloader:
             self.on_error(song_id, message)
         return {'error': message}
 
+    def _save_thumbnail(self, song, song_id):
+        try:
+            thumb_url = song.get('thumbnail', '')
+            if not thumb_url:
+                return
+            thumb_filename = f"{song_id}.jpg"
+            thumb_path = self.download_dir / thumb_filename
+            import urllib.request
+            req = urllib.request.Request(thumb_url, headers={
+                'User-Agent': 'Mozilla/5.0',
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = resp.read()
+            thumb_path.write_bytes(data)
+            local_url = self._server.url_for(str(thumb_path))
+            conn = db.get_conn()
+            conn.execute("UPDATE songs SET thumbnail = ? WHERE id = ?", (local_url, song_id))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            self._log(f"Thumbnail save error: {e}")
+
     def _fetch_lyrics_for(self, song):
         try:
             fetcher = lyrics_mod.LyricsFetcher(ytmusic_handler=self.ytmusic_handler)
@@ -199,10 +348,11 @@ class Downloader:
                     self.on_progress(song_id, 95)
 
         try:
+            platform = song.get('platform', 'youtube')
             if self._use_library or self.ytdlp_bin == 'library':
-                return self._download_with_library(url, song, song_id, output_template, safe_title, progress_hook)
+                return self._download_with_library(url, song, song_id, output_template, safe_title, progress_hook, platform)
 
-            return self._download_with_subprocess(url, song, song_id, output_template, safe_title, progress_hook)
+            return self._download_with_subprocess(url, song, song_id, output_template, safe_title, progress_hook, platform)
         except Exception as e:
             if not self._running.get(song_id, False):
                 db.update_download(song_id, 'cancelled', 0)
@@ -211,16 +361,16 @@ class Downloader:
         finally:
             self._running.pop(song_id, None)
 
-    def _get_audio_format_opts(self):
+    def _get_audio_format_opts(self, platform='youtube'):
         from . import db
         fmt = db.get_setting('audio_format', 'mp3')
-        quality = db.get_setting('audio_quality', 'best')
+        quality = db.get_setting(f'audio_quality_{platform}', '') or db.get_setting('audio_quality', 'best')
         quality_map = {'best': '320', 'high': '192', 'medium': '128', 'low': '64'}
         q = quality_map.get(quality, '192')
         return fmt, q
 
-    def _build_ydl_opts(self, output_template, progress_hook):
-        fmt, q = self._get_audio_format_opts()
+    def _build_ydl_opts(self, output_template, progress_hook, platform='youtube'):
+        fmt, q = self._get_audio_format_opts(platform)
         opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'outtmpl': output_template,
@@ -242,9 +392,9 @@ class Downloader:
             opts['addmetadata'] = True
         return opts
 
-    def _download_with_library(self, url, song, song_id, output_template, safe_title, progress_hook):
+    def _download_with_library(self, url, song, song_id, output_template, safe_title, progress_hook, platform='youtube'):
         import yt_dlp
-        opts = self._build_ydl_opts(output_template, progress_hook)
+        opts = self._build_ydl_opts(output_template, progress_hook, platform)
         final_path = None
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -259,10 +409,11 @@ class Downloader:
                 self.on_progress(song_id, 100)
             self._log(f"OK {song_id}: {final_path}")
             self._fetch_lyrics_for(song)
+            self._save_thumbnail(song, song_id)
             return {'success': True, 'path': final_path}
         return self._fail(song_id, 'No se generó el archivo de audio')
 
-    def _download_with_subprocess(self, url, song, song_id, output_template, safe_title, progress_hook):
+    def _download_with_subprocess(self, url, song, song_id, output_template, safe_title, progress_hook, platform='youtube'):
         cmd = [
             self.ytdlp_bin, url,
             '-f', 'bestaudio[ext=m4a]/bestaudio/best',
@@ -275,7 +426,7 @@ class Downloader:
             ffmpeg_dir = str(Path(self.ffmpeg_bin).parent) if Path(self.ffmpeg_bin).is_file() else ''
             if ffmpeg_dir:
                 cmd.extend(['--ffmpeg-location', ffmpeg_dir])
-            fmt, q = self._get_audio_format_opts()
+            fmt, q = self._get_audio_format_opts(platform)
             cmd.extend(['-x', '--audio-format', fmt, '--audio-quality', f'{q}K',
                         '--embed-thumbnail', '--add-metadata'])
 
@@ -328,6 +479,7 @@ class Downloader:
                 self.on_progress(song_id, 100)
             self._log(f"OK {song_id}: {final_path}")
             self._fetch_lyrics_for(song)
+            self._save_thumbnail(song, song_id)
             return {'success': True, 'path': final_path}
 
         err = '\n'.join(stderr_lines[-6:]) if stderr_lines else 'Error desconocido de yt-dlp'
@@ -354,6 +506,11 @@ class Downloader:
                 Path(song['file_path']).unlink(missing_ok=True)
             except OSError:
                 pass
+        thumb_path = self.download_dir / f"{song_id}.jpg"
+        try:
+            thumb_path.unlink(missing_ok=True)
+        except OSError:
+            pass
         db.update_download(song_id, 'deleted', 0)
         conn = db.get_conn()
         conn.execute("DELETE FROM download_queue WHERE song_id = ?", (song_id,))

@@ -1,31 +1,311 @@
 /* ============================================================
-   ZONOR — Sistema de Temas
+   ZONOR — Sistema de Temas (Material You / Android)
    ============================================================
-   :root  → Classic Dark Flat (por defecto)
-   .glassmorphic → Modern Glassmorphic (se activa con clase en <body>)
+   :root  → fallback por defecto: Android Verde (Anti-flash antes
+            de que theme.js aplique el tema guardado)
+   body.material-you → Estilos Material Design 3 / Android
+      (se activa con la clase `material-you` en <body>, que
+       theme.js agrega para cualquier tema "Android ...")
    ============================================================ */
 
-/* ---------- Tema 1: Classic Dark Flat ---------- */
+/* ---------- Fallback: Android Verde ---------- */
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
-  --bg-card: #16162b;
-  --bg-hover: #1f1f35;
-  --bg-elevated: #20203a;
-  --text-primary: #e8e8f0;
-  --text-secondary: #9898b8;
-  --text-muted: #5c5c7a;
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-secondary: #ec4899;
-  --border: #2a2a45;
-  --shadow: rgba(124, 58, 237, 0.15);
-  --player-bg: #12121a;
-  --sidebar-bg: #0f0f18;
-  --input-bg: #1a1a2e;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --error: #ef4444;
+  --bg-primary: #121314;
+  --bg-secondary: #1e1f22;
+  --bg-tertiary: #26272b;
+  --bg-card: #1e1f22;
+  --bg-hover: #2a2b30;
+  --bg-elevated: #28292d;
+  --text-primary: #e3e2e6;
+  --text-secondary: #c4c6d0;
+  --text-muted: #8a8d96;
+  --accent: #a8eff0;
+  --accent-hover: #8fd6d8;
+  --accent-secondary: #a8c7fa;
+  --border: rgba(255, 255, 255, 0.07);
+  --shadow: rgba(168, 239, 240, 0.30);
+  --player-bg: #16171a;
+  --sidebar-bg: #121314;
+  --input-bg: #26272b;
+  --success: #7ee08a;
+  --warning: #f6c177;
+  --error: #f19898;
+}
 
+/* ============================================================
+   Tema: Material You / Android (Material Design 3)
+   Estilo inspirado en Metrolist / SpotiFLAC:
+   - Fondo oscuro suave con capas tonales
+   - Color de acento pastel "Dynamic Color"
+   - Esquinas extremadamente redondeadas (24px / 16px)
+   - Botón de reproducción tipo píldora/círculo que destaca
+   - Seekbar gruesa estilo cápsula con thumb al hover
+   - Interfaz plana, sin bordes duros, sombras muy sutiles
+   ============================================================ */
+body.material-you {
+  /* ---------- Paleta (fallback; theme.js la aplica en :root) ---------- */
+  --bg-primary: #121314;
+  --bg-secondary: #1e1f22;
+  --bg-tertiary: #26272b;
+  --bg-card: #1e1f22;
+  --bg-hover: #2a2b30;
+  --bg-elevated: #28292d;
+  --text-primary: #e3e2e6;
+  --text-secondary: #c4c6d0;
+  --text-muted: #8a8d96;
+  --accent: #a8eff0;
+  --accent-hover: #8fd6d8;
+  --accent-secondary: #a8c7fa;
+  --border: rgba(255, 255, 255, 0.07);
+  --shadow: rgba(168, 239, 240, 0.30);
+  --player-bg: #16171a;
+  --sidebar-bg: #121314;
+  --input-bg: #26272b;
+  --success: #7ee08a;
+  --warning: #f6c177;
+  --error: #f19898;
 
+  /* ---------- Formas (Material You) ---------- */
+  --radius-sm: 16px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --transition: 200ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---------- Tipografía (Google Sans-like) ---------- */
+  --font: 'Google Sans', 'Segoe UI', system-ui, -apple-system, Roboto,
+          'Inter', 'Helvetica Neue', sans-serif;
+}
+
+/* ---------- Capas de fondo: eliminar bordes duros ---------- */
+body.material-you #sidebar,
+body.material-you #topbar,
+body.material-you .sidebar-header,
+body.material-you .sidebar-footer {
+  border: none;
+}
+
+body.material-you #bottom-player,
+body.material-you .player-left,
+body.material-you .player-right {
+  border: none;
+  box-shadow: 0 -2px 24px rgba(0, 0, 0, 0.45),
+              0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+}
+
+body.material-you #topbar {
+  background: transparent;
+  backdrop-filter: blur(12px);
+}
+
+/* ---------- Tarjetas y contenedores: cantos 24px ---------- */
+body.material-you .now-playing-card,
+body.material-you .search-bar,
+body.material-you .settings-section,
+body.material-you .playlist-detail-header,
+body.material-you .lyrics-edit-actions,
+body.material-you .song-item {
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: 0 4px 24px var(--shadow);
+}
+
+/* Portadas: redondeo de carátula 24px */
+body.material-you .now-playing-thumb,
+body.material-you .mini-player-thumb,
+body.material-you .player-thumbnail,
+body.material-you .playlist-card-thumb,
+body.material-you .artist-card img,
+body.material-you .song-thumb img,
+body.material-you .song-cover {
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- Botón de reproducción: cápsula destacada ---------- */
+body.material-you .btn-play {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--accent);
+  color: #121314 !important;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+body.material-you .btn-play:hover {
+  background: var(--accent-hover);
+  transform: scale(1.06);
+}
+
+body.material-you .btn-play svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* Botón de reproducción mini */
+body.material-you .btn-play-mini {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: var(--accent);
+  color: #121314 !important;
+}
+
+body.material-you .btn-play-mini:hover {
+  background: var(--accent-hover);
+}
+
+/* Botones next/prev: fondo sutil claro/oscuro sin sombra */
+body.material-you .btn-icon,
+body.material-you .btn-skip {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.material-you .btn-icon:hover,
+body.material-you .btn-skip:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Botones de letras: píldora con fondo sutil */
+body.material-you .btn-lyrics {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.material-you .btn-lyrics:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-primary);
+}
+
+body.material-you .btn-lyrics.active {
+  background: rgba(var(--accent-rgb, 59, 130, 246), 0.22);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb, 59, 130, 246), 0.4);
+}
+
+/* ---------- Seekbar gruesa estilo cápsula ---------- */
+body.material-you .progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: height var(--transition);
+}
+
+body.material-you .progress-bar:hover {
+  height: 10px;
+}
+
+body.material-you .progress-fill {
+  border-radius: 999px;
+  background: var(--accent);
+  position: relative;
+}
+
+/* Thumb de la seekbar: invisible hasta el hover */
+body.material-you .progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transition: all var(--transition);
+}
+
+body.material-you .progress-bar:hover .progress-fill::after {
+  width: 16px;
+  height: 16px;
+  opacity: 1;
+}
+
+/* Seekbar mini */
+body.material-you .mini-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.material-you .mini-progress-fill {
+  border-radius: 999px;
+}
+
+/* Slider de volumen */
+body.material-you .volume-slider {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.material-you .volume-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+}
+
+/* ---------- Inputs y campos ---------- */
+body.material-you input,
+body.material-you select,
+body.material-you textarea {
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Scrollbar suave ---------- */
+body.material-you ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.material-you ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+body.material-you ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- Botones primarios: píldoras Material ---------- */
+body.material-you .btn-primary {
+  border-radius: 999px;
+  background: var(--accent);
+  color: #121314;
+  font-weight: 600;
+  padding: 10px 24px;
+}
+
+body.material-you .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+body.material-you .btn-text {
+  border-radius: 999px;
+  color: var(--accent);
+}
+
+/* ---------- Navegación lateral: píldoras ---------- */
+body.material-you .nav-item {
+  border-radius: 999px;
+}
+
+body.material-you .nav-item.active {
+  background: var(--accent);
+  color: #121314;
+}
+
+/* ---------- Selector de temas ---------- */
+body.material-you .theme-btn {
+  border-radius: 16px;
+}
+
+/* ---------- Letras sincronizadas ---------- */
+body.material-you .lyrics-meta {
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  padding: 6px 14px;
+  display: inline-block;
+}

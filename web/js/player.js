@@ -57,6 +57,12 @@ function initAudioContext() {
   srcB.connect(eqFilters.length ? eqFilters[0].node : audioCtx.destination);
 }
 
+function ensureAudioCtx() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
 function applyEqualizer(eqData) {
   try {
     if (!audioCtx) initAudioContext();
@@ -101,14 +107,10 @@ async function crossfadeToSong(index) {
     ]);
     currentQueueIndex = index;
     currentSong = songData;
-    updateNowPlaying(currentSong);
-    updateLikeButtons();
-    prefetchLyrics(currentSong?.id);
     if (shuffleOn) buildShuffleOrder();
     const startVol = Math.max(0.01, current.volume);
     const targetVol = startVol;
     next.volume = 0.01;
-    activeAudio = next;
     if (next.paused) await next.play();
     const fadeSteps = 20;
     const stepTime = (crossfadeDuration * 1000) / fadeSteps;
@@ -123,6 +125,14 @@ async function crossfadeToSong(index) {
           clearInterval(fade);
           current.pause();
           current.src = '';
+          current.volume = playerStatus.volume / 100 || 0.8;
+          activeAudio = next;
+          lastLyricsTick = 0;
+          currentLyrics = null;
+          showLyricsLoading();
+          updateNowPlaying(currentSong);
+          updateLikeButtons();
+          prefetchLyrics(currentSong?.id);
           isCrossfading = false;
           resolve(true);
         }
@@ -195,7 +205,12 @@ async function loadAndPlay(data) {
   }
   if (shuffleOn) buildShuffleOrder();
 
+  currentLyrics = null;
+  showLyricsLoading();
+  lastLyricsTick = 0;
   const ael = activeAudio;
+  ael.volume = playerStatus.volume / 100 || 0.8;
+  ensureAudioCtx();
   if (data.type === 'file') {
     ael.src = fileUrl(data.path);
   } else if (data.type === 'stream') {
@@ -353,6 +368,7 @@ function prefetchLyrics(songId) {
 }
 
 function seekFromClick(e) {
+  ensureAudioCtx();
   const bar = $('progressBar') || $('miniProgress');
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
@@ -363,6 +379,7 @@ function seekFromClick(e) {
 }
 
 function seekMiniFromClick(e) {
+  ensureAudioCtx();
   const bar = $('miniProgress');
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
@@ -371,6 +388,7 @@ function seekMiniFromClick(e) {
 }
 
 async function setVolume(val) {
+  ensureAudioCtx();
   const v = Math.max(0, Math.min(1, parseInt(val) / 100));
   audioA.volume = v;
   audioB.volume = v;
@@ -378,6 +396,7 @@ async function setVolume(val) {
   document.querySelectorAll('.volume-slider').forEach(s => { if (s.value != val) s.value = val; });
   try { await pywebview.api.setVolume(parseInt(val)); } catch (e) {}
 }
+window.setVolume = setVolume;
 
 let lastLyricsTick = 0;
 
@@ -415,9 +434,13 @@ function setupAudioEvents(ael) {
 
   ael.addEventListener('play', () => {
     if (ael !== activeAudio) return;
+    ensureAudioCtx();
     isPlaying = true;
     playerStatus.state = 'playing';
     updatePlayButtons(true);
+    lastLyricsTick = 0;
+    lastRafLyricsTick = 0;
+    updateLyricsDisplay(ael.currentTime || 0);
   });
 
   ael.addEventListener('pause', () => {
@@ -449,8 +472,12 @@ function setupAudioEvents(ael) {
 
   ael.addEventListener('error', async () => {
     if (ael !== activeAudio) return;
+    const errCode = ael.error ? ael.error.code : null;
+    const srcInfo = ael.currentSrc || ael.src || '';
+    const briefSrc = srcInfo.length > 120 ? srcInfo.slice(0, 120) + '…' : srcInfo;
+    console.error('[Zonor] playback error', errCode, briefSrc);
     if (!currentSong || streamRetryCount >= 2) {
-      showToast('Error de reproducción', 'error');
+      showToast(`Error de reproducción (code ${errCode})`, 'error');
       updatePlayButtons(false);
       return;
     }
@@ -463,7 +490,7 @@ function setupAudioEvents(ael) {
         return;
       }
     } catch (e) {}
-    showToast('Error de reproducción', 'error');
+    showToast(`Error de reproducción (code ${errCode})`, 'error');
     updatePlayButtons(false);
   });
 
@@ -484,6 +511,20 @@ function setupAudioEvents(ael) {
 
 setupAudioEvents(audioA);
 setupAudioEvents(audioB);
+
+let lastRafLyricsTick = 0;
+function lyricsRafLoop() {
+  if (isPlaying && activeAudio && !activeAudio.paused) {
+    ensureAudioCtx();
+    const now = performance.now();
+    if (now - lastRafLyricsTick > 50) {
+      lastRafLyricsTick = now;
+      updateLyricsDisplay(activeAudio.currentTime || 0);
+    }
+  }
+  requestAnimationFrame(lyricsRafLoop);
+}
+requestAnimationFrame(lyricsRafLoop);
 
 function updatePlayButtons(playing) {
   const paths = playing
@@ -530,6 +571,10 @@ document.addEventListener('keydown', (e) => {
 
 async function downloadSong(songId) {
   try {
+    const plat = songPlatform(songId);
+    if (plat && plat !== 'youtube') {
+      showToast('Buscando esta canción en YouTube Music para descargarla...', 'info');
+    }
     await pywebview.api.downloadSong(songId);
     showToast('Descarga iniciada');
     if (currentView === 'downloads') loadDownloads();
@@ -554,7 +599,7 @@ async function showAddToPlaylist(songId) {
       btn.onclick = () => addToPlaylistConfirm(pl.id);
       chooser.appendChild(btn);
     });
-    chooser.innerHTML += '<hr style="border-color:var(--border);margin:8px 0">';
+    chooser.insertAdjacentHTML('beforeend', '<hr style="border-color:var(--border);margin:8px 0">');
     const createBtn = document.createElement('button');
     createBtn.className = 'btn-primary btn-full';
     createBtn.textContent = '+ Nueva playlist';

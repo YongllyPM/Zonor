@@ -69,7 +69,7 @@ async function loadDownloads() {
         div.dataset.songId = song.id;
         div.innerHTML = `
           <span class="song-index">${i + 1}</span>
-          <div class="song-thumb">${song.thumbnail ? `<img src="${song.thumbnail}" loading="lazy">` : ''}</div>
+          ${songThumbMarkup(song)}
           <div class="song-info">
             <div class="song-title">${escapeHtml(song.title)}</div>
             <div class="song-artist">${escapeHtml(song.artist)}</div>
@@ -126,4 +126,13 @@ async function deleteDownloaded(songId) {
   await pywebview.api.deleteDownload(songId);
   showToast('Descarga eliminada');
   loadDownloads();
+}
+
+async function openDownloadsFolder() {
+  try {
+    const result = await pywebview.api.openDownloadDir();
+    if (!result?.ok) showToast('No se pudo abrir la carpeta: ' + (result?.error || ''), 'error');
+  } catch (e) {
+    showToast('No se pudo abrir la carpeta', 'error');
+  }
 }

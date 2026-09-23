@@ -6,22 +6,50 @@ let authStatus = { authenticated: false, user: null };
 
 function $(id) { return document.getElementById(id); }
 
+function updatePlayerStatus(d) {
+  if (d.state != null) playerStatus.state = d.state;
+  if (d.position != null) playerStatus.position = d.position;
+  if (d.duration != null) playerStatus.duration = d.duration;
+  if (d.volume != null) playerStatus.volume = d.volume;
+  if (d.current_song != null) {
+    if (d.current_song && !currentSong) {
+      currentSong = d.current_song;
+      updateNowPlaying(d.current_song);
+    }
+  }
+}
+
 // ===== Navigation =====
+const CATALOG_VIEWS = {
+  catalog_yt: 'youtube',
+  catalog_deezer: 'deezer',
+  catalog_apple: 'apple',
+};
+
 function switchView(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const v = $(`view-${view}`);
+  let v;
+  if (CATALOG_VIEWS[view]) {
+    v = $('view-catalog');
+    setCatalogPlatform(CATALOG_VIEWS[view]);
+  } else {
+    v = $(`view-${view}`);
+  }
   if (v) v.classList.add('active');
   const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
   if (nav) nav.classList.add('active');
   currentView = view;
   if (view === 'home') loadHome();
+  if (view === 'search') { if (!$('searchInput').value.trim()) showSearchHistory(); }
   if (view === 'library') loadLibrary();
   if (view === 'playlists') loadPlaylists();
   if (view === 'downloads') loadDownloads();
   if (view === 'liked') loadLikedView();
   if (view === 'artists') loadArtists();
   if (view === 'player') loadLyrics();
+  if (view === 'settings') { loadThemes(); loadSettings(); }
+  if (CATALOG_VIEWS[view] !== undefined) loadPlatformCatalog();
 }
 
 let viewHistory = ['home'];
@@ -229,7 +257,7 @@ window.__handlePyEvent = function(data) {
       break;
     case 'theme_changed':
       if (d && d.name && window.applyThemeByName) {
-        window.applyThemeByName(d.name);
+        window.applyThemeByName(d.name, false);
       } else {
         applyTheme(d);
       }
@@ -242,6 +270,49 @@ window.__handlePyEvent = function(data) {
       break;
     case 'settings_updated':
       showToast('Configuración guardada');
+      break;
+    case 'recent_played':
+      refreshHomeRecent(d.song_id);
+      break;
+    case 'transcription_progress':
+      if (typeof window.__onTranscriptionProgress === 'function') {
+        window.__onTranscriptionProgress(d);
+      }
+      break;
+    case 'transcription_done':
+      if (typeof window.__onTranscriptionDone === 'function') {
+        window.__onTranscriptionDone(d);
+      }
+      break;
+    case 'transcription_error':
+      if (typeof window.__onTranscriptionError === 'function') {
+        window.__onTranscriptionError(d);
+      }
+      break;
+    case 'install_progress':
+      if (typeof window.__onInstallProgress === 'function') {
+        window.__onInstallProgress(d);
+      }
+      break;
+    case 'install_error':
+      if (typeof window.__onInstallError === 'function') {
+        window.__onInstallError(d);
+      }
+      break;
+    case 'install_done':
+      if (typeof window.__onInstallDone === 'function') {
+        window.__onInstallDone(d);
+      }
+      break;
+    case 'lrclib_submit_progress':
+      if (typeof window.__onLrclibSubmitProgress === 'function') {
+        window.__onLrclibSubmitProgress(d);
+      }
+      break;
+    case 'lrclib_submit_done':
+      if (typeof window.__onLrclibSubmitDone === 'function') {
+        window.__onLrclibSubmitDone(d);
+      }
       break;
   }
 };
@@ -284,6 +355,8 @@ function renderHomeFeed(chart) {
     ['homeNewSection', 'homeNewGrid', chart.new_releases],
     ['homeListenAgainSection', 'homeListenAgainGrid', chart.listen_again],
     ['homeTrendingSection', 'homeTrendingGrid', chart.trending],
+    ['homeDeezerSection', 'homeDeezerGrid', chart.deezer_trending],
+    ['homeAppleSection', 'homeAppleGrid', chart.apple_trending],
     ['homeTopSection', 'homeTopGrid', chart.top_songs],
   ];
   let hasContent = false;
@@ -319,6 +392,51 @@ async function loadHome() {
     renderHomeFeed(chart);
   } catch (e) {
     showHomeLoading(false);
+  }
+}
+
+async function refreshHomeRecent(songId) {
+  if (!songId) return;
+  try {
+    const songs = await pywebview.api.getLikedSongs();
+    const recent = await pywebview.api.getRecentPlays();
+    if (recent && recent.length) {
+      showHomeSection('homeRecentSection', true);
+      renderSongGrid($('homeRecentGrid'), recent);
+    }
+  } catch(e) {}
+}
+
+// ===== Platform catalog =====
+const CATALOG_TITLES = { youtube: 'YouTube Music', deezer: 'Deezer', apple: 'Apple Music' };
+let currentCatalogPlatform = 'youtube';
+
+function setCatalogPlatform(platform) {
+  currentCatalogPlatform = platform;
+  const t = $('catalogTitle');
+  if (t) t.textContent = CATALOG_TITLES[platform] || 'Catálogo';
+  noteCatalogBadge();
+}
+
+function noteCatalogBadge() {
+  const t = $('catalogTitle');
+  if (!t) return;
+  const p = currentCatalogPlatform;
+  const b = document.querySelector('#catalogTitle .platform-badge');
+  const badge = platformBadge(p);
+  const label = CATALOG_TITLES[p] || '';
+  t.innerHTML = `${escapeHtml(label)} ${badge}`;
+}
+
+async function loadPlatformCatalog() {
+  try {
+    $('catalogLoading').style.display = 'flex';
+    const songs = await pywebview.api.getPlatformCatalog(currentCatalogPlatform, 24);
+    renderSongGrid($('catalogGrid'), songs);
+  } catch (e) {
+    $('catalogGrid').innerHTML = '<div class="text-muted" style="padding:20px">No se pudo cargar el catálogo</div>';
+  } finally {
+    $('catalogLoading').style.display = 'none';
   }
 }
 
@@ -359,11 +477,13 @@ function renderSongGrid(container, songs, startIdx = 0) {
     div.className = 'song-item';
     div.dataset.songId = song.id;
     const liked = song.liked ? ' liked' : '';
+      notePlatform(song.id, song.platform || 'youtube');
+      const pbadge = platformBadge(song.platform || 'youtube');
     div.innerHTML = `
       <span class="song-index">${startIdx + i + 1}</span>
-      <div class="song-thumb">${song.thumbnail ? `<img src="${song.thumbnail}" loading="lazy">` : '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>'}</div>
+      ${songThumbMarkup(song)}
       <div class="song-info">
-        <div class="song-title">${escapeHtml(song.title)}</div>
+        <div class="song-title">${escapeHtml(song.title)}${pbadge}</div>
         <div class="song-artist">${escapeHtml(song.artist)}</div>
       </div>
       <div class="song-album">${escapeHtml(song.album || '')}</div>
@@ -418,6 +538,39 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+const songPlatformMap = {};
+function notePlatform(id, platform) {
+  if (id) songPlatformMap[id] = platform;
+}
+function songPlatform(id) {
+  return songPlatformMap[id] || '';
+}
+
+const PLATFORM_LABELS = {
+  youtube: { label: 'YT Music', cls: 'youtube' },
+  deezer: { label: 'Deezer', cls: 'deezer' },
+  apple: { label: 'Apple Music', cls: 'apple' },
+  spotify: { label: 'Spotify', cls: 'spotify' },
+};
+function platformBadge(platform) {
+  const p = PLATFORM_LABELS[platform] || PLATFORM_LABELS.youtube;
+  return `<span class="platform-badge ${p.cls}">${p.label}</span>`;
+}
+
+function appLogoMarkup(platform) {
+  const p = PLATFORM_LABELS[platform] ? platform : 'youtube';
+  return `<span class="song-app-logo ${p}"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.525 18.025V5.975L18.025 12l-8.5 6.025Z"/></svg></span>`;
+}
+
+const DEFAULT_SONG_SVG = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>';
+
+function songThumbMarkup(song) {
+  const img = song && song.thumbnail
+    ? `<img src="${song.thumbnail}" loading="lazy">`
+    : (song ? DEFAULT_SONG_SVG : '');
+  return `<div class="song-thumb">${img}${appLogoMarkup(song ? song.platform : 'youtube')}</div>`;
 }
 
 function formatDuration(secs) {

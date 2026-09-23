@@ -1,16 +1,82 @@
 let currentThemeData = null;
-let currentThemeName = 'Classic Dark Flat';
+let currentThemeName = 'Android Verde';
 
 const THEMES = {
-  'Classic Dark Flat': {
+  'Android Verde': {
     colors: {
-      bg_primary: '#0a0a0f', bg_secondary: '#12121a', bg_tertiary: '#1a1a2e',
-      bg_card: '#16162b', bg_hover: '#1f1f35', bg_elevated: '#20203a',
-      text_primary: '#e8e8f0', text_secondary: '#9898b8', text_muted: '#5c5c7a',
-      accent: '#7c3aed', accent_hover: '#6d28d9', accent_secondary: '#ec4899',
-      border: '#2a2a45', shadow: 'rgba(124, 58, 237, 0.15)',
-      player_bg: '#12121a', sidebar_bg: '#0f0f18', input_bg: '#1a1a2e',
-      success: '#22c55e', warning: '#f59e0b', error: '#ef4444',
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#e3e2e6', text_secondary: '#c4c6d0', text_muted: '#8a8d96',
+      accent: '#a8eff0', accent_hover: '#8fd6d8', accent_secondary: '#a8c7fa',
+      border: 'rgba(255,255,255,0.07)', shadow: 'rgba(168, 239, 240, 0.30)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Azul': {
+    colors: {
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#e3e2e6', text_secondary: '#c4c6d0', text_muted: '#8a8d96',
+      accent: '#a8c7fa', accent_hover: '#8fb0e0', accent_secondary: '#a8eff0',
+      border: 'rgba(255,255,255,0.07)', shadow: 'rgba(168, 199, 250, 0.30)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Rosa': {
+    colors: {
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#e3e2e6', text_secondary: '#c4c6d0', text_muted: '#8a8d96',
+      accent: '#ffb3c1', accent_hover: '#e69cab', accent_secondary: '#ffd3a8',
+      border: 'rgba(255,255,255,0.07)', shadow: 'rgba(255, 179, 193, 0.30)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Morado': {
+    colors: {
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#e3e2e6', text_secondary: '#c4c6d0', text_muted: '#8a8d96',
+      accent: '#d0bcff', accent_hover: '#b9a5e8', accent_secondary: '#ffb3c1',
+      border: 'rgba(255,255,255,0.07)', shadow: 'rgba(208, 188, 255, 0.30)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Ámbar': {
+    colors: {
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#e3e2e6', text_secondary: '#c4c6d0', text_muted: '#8a8d96',
+      accent: '#ffd3a8', accent_hover: '#e6bc90', accent_secondary: '#a8eff0',
+      border: 'rgba(255,255,255,0.07)', shadow: 'rgba(255, 211, 168, 0.30)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Blanco': {
+    colors: {
+      bg_primary: '#121314', bg_secondary: '#1e1f22', bg_tertiary: '#26272b',
+      bg_card: '#1e1f22', bg_hover: '#2a2b30', bg_elevated: '#28292d',
+      text_primary: '#ffffff', text_secondary: '#d6d8dd', text_muted: '#9da0a6',
+      accent: '#ffffff', accent_hover: '#d9d9de', accent_secondary: '#e3e2e6',
+      border: 'rgba(255,255,255,0.08)', shadow: 'rgba(255, 255, 255, 0.25)',
+      player_bg: '#16171a', sidebar_bg: '#121314', input_bg: '#26272b',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
+    },
+  },
+  'Android Negro': {
+    colors: {
+      bg_primary: '#000000', bg_secondary: '#0a0a0c', bg_tertiary: '#111114',
+      bg_card: '#0f0f12', bg_hover: '#16161a', bg_elevated: '#16161a',
+      text_primary: '#f5f5f7', text_secondary: '#c8c9cf', text_muted: '#8f9198',
+      accent: '#ffffff', accent_hover: '#d0d0d6', accent_secondary: '#9aa0a6',
+      border: 'rgba(255,255,255,0.10)', shadow: 'rgba(0, 0, 0, 0.55)',
+      player_bg: '#0a0a0c', sidebar_bg: '#000000', input_bg: '#111114',
+      success: '#7ee08a', warning: '#f6c177', error: '#f19898',
     },
   },
 };
@@ -32,16 +98,22 @@ function applyTheme(theme) {
     'warning': 'warning', 'error': 'error',
   };
   Object.entries(map).forEach(([cssVar, themeKey]) => {
-    if (theme[themeKey]) root.style.setProperty(`--${cssVar}`, theme[themeKey]);
+    if (!theme[themeKey]) return;
+    const value = theme[themeKey];
+    root.style.setProperty(`--${cssVar}`, value);
+    document.body.style.setProperty(`--${cssVar}`, value);
   });
 }
 
-function applyThemeByName(name) {
+function applyThemeByName(name, persist = true) {
   const themeDef = THEMES[name];
   if (!themeDef) return;
   currentThemeName = name;
   currentThemeData = { ...themeDef.colors };
   applyTheme(currentThemeData);
+
+  // Activar/desactivar estilos específicos de Material You
+  document.body.classList.toggle('material-you', name.startsWith('Android'));
 
   // Update active state in selector UI
   document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -49,16 +121,19 @@ function applyThemeByName(name) {
   });
 
   // Persist
-  try {
-    pywebview.api.setTheme(name);
-  } catch(e) {}
+  if (persist) {
+    try {
+      pywebview.api.setTheme(name);
+    } catch(e) {}
+  }
 }
 
 const THEME_ALIASES = {
-  'Oscuro': 'Classic Dark Flat',
-  'Claro': 'Classic Dark Flat',  // fallback: no light theme yet
-  'Azul': 'Classic Dark Flat',
-  'Verde': 'Classic Dark Flat',
+  'Oscuro': 'Android Verde',
+  'Claro': 'Android Blanco',
+  'Azul': 'Android Azul',
+  'Verde': 'Android Verde',
+  'Material You': 'Android Verde',
 };
 
 async function loadThemes() {
@@ -82,58 +157,15 @@ async function loadThemes() {
       const c = t.colors;
       btn.style.background = `linear-gradient(135deg, ${c.accent}, ${c.bg_primary})`;
       btn.title = name;
-      btn.innerHTML = `<span>${name === 'Classic Dark Flat' ? 'Clásico' : 'Glass'}</span>`;
+      btn.innerHTML = `<span>${name.replace('Android ', '')}</span>`;
       btn.onclick = () => applyThemeByName(name);
       selector.appendChild(btn);
     });
-    applyThemeByName(currentName);
+    applyThemeByName(currentName, false);
   } catch(e) {}
 }
 
 function showThemeEditor() {
   if (!currentThemeData) { showToast('Carga un tema primero', 'error'); return; }
-  const grid = document.getElementById('themeEditorGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  const labels = {
-    bg_primary: 'Fondo principal', bg_secondary: 'Fondo secundario', bg_tertiary: 'Fondo terciario',
-    bg_card: 'Tarjetas', bg_hover: 'Hover', bg_elevated: 'Elevado',
-    text_primary: 'Texto principal', text_secondary: 'Texto secundario', text_muted: 'Texto gris',
-    accent: 'Acento', accent_hover: 'Acento hover', accent_secondary: 'Acento 2',
-    border: 'Bordes', player_bg: 'Fondo reproductor', sidebar_bg: 'Fondo sidebar',
-    input_bg: 'Fondo inputs', success: 'Éxito', warning: 'Advertencia', error: 'Error',
-  };
-  Object.entries(labels).forEach(([key, label]) => {
-    const item = document.createElement('div');
-    item.className = 'theme-editor-item';
-    item.innerHTML = `<label>${label}</label><input type="color" id="te-${key}" value="${currentThemeData[key] || '#000000'}">`;
-    item.querySelector('input').oninput = function() {
-      currentThemeData[key] = this.value;
-      applyTheme(currentThemeData);
-    };
-    grid.appendChild(item);
-  });
-  const nameInput = document.getElementById('themeNameInput');
-  if (nameInput) nameInput.value = currentThemeData.name + ' (personalizado)';
-  const editor = document.getElementById('themeEditor');
-  if (editor) editor.style.display = 'flex';
+  document.getElementById('themeEditorModal').style.display = 'flex';
 }
-
-async function saveCustomTheme() {
-  const nameInput = document.getElementById('themeNameInput');
-  if (!nameInput) return;
-  const name = nameInput.value.trim();
-  if (!name) { showToast('Escribe un nombre', 'error'); return; }
-  try {
-    currentThemeData.name = name;
-    await pywebview.api.saveTheme(JSON.stringify(currentThemeData));
-    showToast('Tema guardado');
-    closeDialog(null, 'themeEditor');
-    loadThemes();
-  } catch(e) { showToast('Error', 'error'); }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadThemes();
-  loadSettings();
-});

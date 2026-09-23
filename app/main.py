@@ -52,11 +52,20 @@ class JSAPI:
     def searchSuggestions(self, query):
         return self._api.search_suggestions(query)
 
+    def getSearchHistory(self):
+        return self._api.get_search_history()
+
+    def clearSearchHistory(self):
+        return self._api.clear_search_history()
+
     def getLibrary(self):
         return self._api.get_library()
 
     def getLikedSongs(self):
         return self._api.get_liked_songs()
+
+    def getRecentPlays(self):
+        return self._api.get_recent_plays()
 
     def getArtists(self):
         return self._api.get_artists()
@@ -115,6 +124,9 @@ class JSAPI:
     def queuePrev(self):
         return self._api.queue_prev()
 
+    def getPlatformCatalog(self, platform, limit=24):
+        return self._api.get_platform_catalog(platform, limit)
+
     def getStreamUrl(self, song_id):
         return self._api.get_stream_url(song_id)
 
@@ -142,8 +154,35 @@ class JSAPI:
     def cancelDownload(self, song_id):
         self._api.cancel_download(song_id)
 
+    def openDownloadDir(self):
+        return self._api.open_download_dir()
+
     def getLyrics(self, song_id=None):
         return self._api.get_lyrics(song_id)
+
+    def saveLyricsEdit(self, song_id, lyrics_json):
+        return self._api.save_lyrics_edit(song_id, lyrics_json)
+
+    def searchLyrics(self, artist, title):
+        return self._api.search_lyrics(artist, title)
+
+    def fetchLyricsById(self, lrclib_id):
+        return self._api.fetch_lyrics_by_id(lrclib_id)
+
+    def translateLyrics(self, song_id=None, target_lang=None):
+        return self._api.translate_lyrics(song_id, target_lang)
+
+    def submitLyricsCorrection(self, artist, title, album, duration, plain_lyrics, synced_lyrics):
+        return self._api.submit_lyrics_correction(artist, title, album, duration, plain_lyrics, synced_lyrics)
+
+    def transcribeLyrics(self, song_id):
+        return self._api.transcribe_lyrics(song_id)
+
+    def checkTranscriber(self):
+        return self._api.check_transcriber()
+
+    def installTranscriber(self):
+        return self._api.install_transcriber()
 
     def startSync(self):
         self._api.start_sync()
@@ -189,6 +228,18 @@ class JSAPI:
 
     def factoryReset(self):
         return self._api.factoryReset()
+
+    def exportData(self):
+        return self._api.export_data()
+
+    def importData(self):
+        return self._api.import_data()
+
+    def backupNow(self):
+        return self._api.backup_now()
+
+    def getBackupInfo(self):
+        return self._api.get_backup_info()
 
 
 def main():

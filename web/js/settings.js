@@ -7,10 +7,21 @@ async function loadSettings() {
     $('defaultVolume').value = settings.volume || 80;
     $('volVal').textContent = settings.volume || 80;
     $('syncInterval').value = settings.sync_interval || 60;
-    $('audioQuality').value = settings.audio_quality || 'best';
+    $('audioQualityYoutube').value = settings.audio_quality_youtube || 'high';
+    $('audioQualityDeezer').value = settings.audio_quality_deezer || 'best';
+    $('audioQualityApple').value = settings.audio_quality_apple || 'high';
     $('audioFormat').value = settings.audio_format || 'mp3';
     $('crossfade').value = settings.crossfade || 0;
     $('skipSilence').checked = settings.skip_silence === 'true';
+    $('translationLang').value = settings.translation_lang || 'es';
+    $('backupEnabled').checked = settings.backup_enabled === 'true';
+    $('backupInterval').value = settings.backup_interval || 'monthly';
+    if (settings.last_backup) {
+      const d = new Date(settings.last_backup * 1000);
+      $('lastBackupLabel').textContent = d.toLocaleString();
+    } else {
+      $('lastBackupLabel').textContent = 'Nunca';
+    }
     if (settings.equalizer) {
       try {
         const eq = JSON.parse(settings.equalizer);
@@ -62,10 +73,13 @@ async function saveAllSettings() {
   const settings = {
     volume: parseInt($('defaultVolume').value),
     sync_interval: parseInt($('syncInterval').value) || 60,
-    audio_quality: $('audioQuality').value,
+    audio_quality_youtube: $('audioQualityYoutube').value,
+    audio_quality_deezer: $('audioQualityDeezer').value,
+    audio_quality_apple: $('audioQualityApple').value,
     audio_format: $('audioFormat').value,
     crossfade: parseInt($('crossfade').value) || 0,
     skip_silence: $('skipSilence').checked ? 'true' : 'false',
+    translation_lang: $('translationLang').value || 'es',
   };
   const eqData = {};
   document.querySelectorAll('.eq-band input').forEach(s => {
@@ -84,6 +98,9 @@ function applyAudioSettings(settings) {
   if (window.applySkipSilence) window.applySkipSilence(settings.skip_silence === 'true');
   if (window.applyEqualizer && settings.equalizer) {
     try { window.applyEqualizer(JSON.parse(settings.equalizer)); } catch(e) {}
+  }
+  if (settings.volume !== undefined && window.setVolume) {
+    window.setVolume(settings.volume);
   }
 }
 
@@ -114,7 +131,62 @@ function resetEqualizer() {
   if (window.applyEqualizer) window.applyEqualizer({});
 }
 
-function factoryReset() {
+async function exportData() {
+  try {
+    showToast('Guardando datos...');
+    const result = await pywebview.api.exportData();
+    if (result?.ok) {
+      showToast('Datos exportados', 'success');
+    } else {
+      showToast(result?.error || 'Exportación cancelada', 'error');
+    }
+  } catch(e) { showToast('Error al exportar: ' + e.message, 'error'); }
+}
+
+async function importData() {
+  if (!confirm('⚠️ Importar datos reemplazará TODA la biblioteca actual (canciones, playlists, descargas y ajustes) con el contenido del archivo.\n\n¿Continuar?')) return;
+  try {
+    const result = await pywebview.api.importData();
+    if (result?.ok) {
+      showToast('Datos importados correctamente', 'success');
+      if (window.loadLibrary) window.loadLibrary();
+      if (window.loadPlaylists) window.loadPlaylists();
+      if (window.loadSettings) window.loadSettings();
+      if (window.loadDownloads) window.loadDownloads();
+    } else {
+      showToast(result?.error || 'Importación cancelada', 'error');
+    }
+  } catch(e) { showToast('Error al importar: ' + e.message, 'error'); }
+}
+
+async function backupNow() {
+  try {
+    showToast('Creando copia de seguridad...');
+    const result = await pywebview.api.backupNow();
+    if (result?.ok) {
+      showToast('Copia creada: ' + result.path, 'success');
+      if (window.loadSettings) window.loadSettings();
+    } else {
+      showToast(result?.error || 'Error al crear la copia', 'error');
+    }
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function saveBackupSettings() {
+  let settings = {};
+  try {
+    const current = await pywebview.api.getSettings();
+    settings = current || {};
+  } catch(e) {}
+  settings.backup_enabled = $('backupEnabled').checked ? 'true' : 'false';
+  settings.backup_interval = $('backupInterval').value;
+  try {
+    await pywebview.api.saveSettings(JSON.stringify(settings));
+    showToast('Configuración de copias guardada');
+  } catch(e) {}
+}
+
+async function factoryReset() {
   if (!confirm('⚠️ ¿Restablecer todo?\n\nSe borrarán TODAS las descargas, playlists guardadas, canciones con "Me gusta", y se cerrará la sesión.\n\n¿Estás seguro?')) return;
   if (!confirm('Esta acción NO se puede deshacer. ¿Continuar?')) return;
   (async () => {

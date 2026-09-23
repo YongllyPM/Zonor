@@ -57,7 +57,11 @@ class MusicPlayer:
             url = f"https://www.youtube.com/watch?v={video_id}"
             if self.ytdlp_bin == 'library':
                 import yt_dlp
-                ydl_opts = {'format': 'bestaudio', 'quiet': True}
+                ydl_opts = {
+                    'format': 'bestaudio[ext=m4a]/bestaudio/best',
+                    'quiet': True,
+                    'noplaylist': True,
+                }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=False)
                     stream = None
@@ -72,8 +76,8 @@ class MusicPlayer:
                     return stream
             else:
                 result = subprocess.run(
-                    [self.ytdlp_bin, '-g', '--format', 'bestaudio', url],
-                    capture_output=True, text=True, timeout=30,
+                    [self.ytdlp_bin, '-g', '--format', 'bestaudio[ext=m4a]/bestaudio/best', url],
+                    capture_output=True, text=True, timeout=60,
                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
                 )
                 if result.returncode == 0:

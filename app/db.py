@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import json
+import time
 from pathlib import Path
 
 DB_DIR = Path(os.environ.get('APPDATA', '')) / 'Zonor'
@@ -79,9 +80,23 @@ def init_db():
             played_at INTEGER DEFAULT (unixepoch()),
             FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS search_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            searched_at INTEGER DEFAULT (unixepoch())
+        );
     """)
     try:
         conn.execute("ALTER TABLE songs ADD COLUMN liked INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE songs ADD COLUMN platform TEXT DEFAULT 'youtube'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE songs ADD COLUMN spotify_id TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
     conn.commit()
@@ -108,13 +123,15 @@ def save_song(song):
     liked = song.get('liked', existing['liked'] if existing else 0)
     downloaded = existing['downloaded'] if existing else 0
     file_path = existing['file_path'] if existing else ''
+    platform = song.get('platform', 'youtube')
+    spotify_id = song.get('spotify_id', '')
     conn.execute("""INSERT OR REPLACE INTO songs
-        (id, title, artist, album, duration, thumbnail, youtube_id, lyrics, liked, downloaded, file_path)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (id, title, artist, album, duration, thumbnail, youtube_id, lyrics, liked, downloaded, file_path, platform, spotify_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (song['id'], song['title'], song['artist'], song.get('album', ''),
          song.get('duration', 0), song.get('thumbnail', ''),
          song.get('youtube_id', ''), song.get('lyrics', ''), 1 if liked else 0,
-         downloaded, file_path))
+         downloaded, file_path, platform, spotify_id))
     conn.commit()
     conn.close()
 
@@ -281,9 +298,40 @@ def get_recent_plays(limit=15):
     conn = get_conn()
     rows = conn.execute("""SELECT s.* FROM songs s
         INNER JOIN play_history h ON s.id = h.song_id
-        ORDER BY h.played_at DESC LIMIT ?""", (limit,)).fetchall()
+        GROUP BY s.id
+        ORDER BY MAX(h.played_at) DESC, MAX(h.id) DESC LIMIT ?""", (limit,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# ===== Search history =====
+def add_search_history(query):
+    query = (query or '').strip()
+    if not query:
+        return
+    conn = get_conn()
+    conn.execute("DELETE FROM search_history WHERE query = ?", (query,))
+    conn.execute("INSERT INTO search_history (query) VALUES (?)", (query,))
+    conn.execute("""DELETE FROM search_history WHERE id NOT IN (
+        SELECT id FROM search_history ORDER BY searched_at DESC LIMIT 12)""")
+    conn.commit()
+    conn.close()
+
+
+def get_search_history(limit=12):
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT query, MAX(searched_at) as searched_at FROM search_history "
+        "GROUP BY query ORDER BY searched_at DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def clear_search_history():
+    conn = get_conn()
+    conn.execute("DELETE FROM search_history")
+    conn.commit()
+    conn.close()
 
 
 def cache_get(key):
@@ -346,3 +394,89 @@ def cache_set(key, value, ttl=3600):
                 (key, json.dumps(value), expires))
     conn.commit()
     conn.close()
+
+
+# ===== Export / Import / Backup =====
+
+def export_all_data():
+    conn = get_conn()
+    data = {
+        'version': 1,
+        'settings': {r['key']: r['value'] for r in conn.execute("SELECT key, value FROM settings").fetchall()},
+        'songs': [dict(r) for r in conn.execute("SELECT * FROM songs").fetchall()],
+        'playlists': [dict(r) for r in conn.execute("SELECT * FROM playlists").fetchall()],
+        'playlist_songs': [dict(r) for r in conn.execute("SELECT * FROM playlist_songs").fetchall()],
+        'download_queue': [dict(r) for r in conn.execute("SELECT * FROM download_queue").fetchall()],
+        'play_history': [dict(r) for r in conn.execute("SELECT song_id, played_at FROM play_history").fetchall()],
+    }
+    conn.close()
+    auth_dir = Path(os.environ.get('APPDATA', '')) / 'Zonor'
+    data['auth_files'] = {}
+    for name in ('headers.json', 'oauth.json', 'oauth_credentials.json'):
+        p = auth_dir / name
+        if p.exists():
+            try:
+                data['auth_files'][name] = p.read_text(encoding='utf-8')
+            except Exception:
+                pass
+    return data
+
+
+def import_all_data(data):
+    conn = get_conn()
+    conn.execute("PRAGMA foreign_keys=OFF")
+    for table in ('playlist_songs', 'play_history', 'download_queue', 'songs', 'playlists', 'settings'):
+        conn.execute(f"DELETE FROM {table}")
+    conn.execute("DELETE FROM sqlite_sequence WHERE name='play_history'")
+
+    for key, value in (data.get('settings') or {}).items():
+        if key in ('download_folder',):
+            continue
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value)))
+
+    for s in data.get('songs') or []:
+        conn.execute("""INSERT OR REPLACE INTO songs
+            (id, title, artist, album, duration, thumbnail, youtube_id, lyrics, liked, downloaded, file_path, platform, spotify_id, added_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (s.get('id', ''), s.get('title', ''), s.get('artist', ''),
+             s.get('album', ''), s.get('duration', 0), s.get('thumbnail', ''),
+             s.get('youtube_id', ''), s.get('lyrics', ''),
+             1 if s.get('liked') else 0, 1 if s.get('downloaded') else 0,
+             s.get('file_path', ''), s.get('platform', 'youtube'),
+             s.get('spotify_id', ''), s.get('added_at', int(time.time()))))
+
+    for p in data.get('playlists') or []:
+        conn.execute("""INSERT OR REPLACE INTO playlists
+            (id, name, description, thumbnail, sync_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+            (p.get('id', ''), p.get('name', ''), p.get('description', ''),
+             p.get('thumbnail', ''), p.get('sync_id', ''), p.get('created_at', int(time.time()))))
+
+    for ps in data.get('playlist_songs') or []:
+        conn.execute("""INSERT OR REPLACE INTO playlist_songs (playlist_id, song_id, position, added_at)
+            VALUES (?, ?, ?, ?)""",
+            (ps.get('playlist_id', ''), ps.get('song_id', ''), ps.get('position', 0), ps.get('added_at', int(time.time()))))
+
+    for d in data.get('download_queue') or []:
+        conn.execute("""INSERT OR REPLACE INTO download_queue (id, song_id, status, progress, created_at)
+            VALUES (?, ?, ?, ?, ?)""",
+            (d.get('id', d.get('song_id', '')), d.get('song_id', ''), d.get('status', 'pending'),
+             d.get('progress', 0), d.get('created_at', int(time.time()))))
+
+    for h in data.get('play_history') or []:
+        conn.execute("INSERT INTO play_history (song_id, played_at) VALUES (?, ?)",
+                     (h.get('song_id', ''), h.get('played_at', int(time.time()))))
+
+    conn.commit()
+    conn.close()
+
+    auth_dir = Path(os.environ.get('APPDATA', '')) / 'Zonor'
+    auth_dir.mkdir(parents=True, exist_ok=True)
+    for name, content in (data.get('auth_files') or {}).items():
+        if name not in ('headers.json', 'oauth.json', 'oauth_credentials.json'):
+            continue
+        try:
+            (auth_dir / name).write_text(content, encoding='utf-8')
+        except Exception:
+            pass
+    return True

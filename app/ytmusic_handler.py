@@ -130,6 +130,30 @@ class YTMusicHandler:
                 json.dump(normalized, f, indent=2)
         else:
             raise ValueError('No headers provided')
+        self._write_cookies_txt(normalized)
+
+    def _write_cookies_txt(self, headers):
+        cookie = headers.get('Cookie') or headers.get('cookie')
+        if not cookie:
+            return
+        cookies_file = Path(os.environ.get('APPDATA', '')) / 'Zonor' / 'cookies.txt'
+        lines = ['# Netscape HTTP Cookie File', '']
+        seen = set()
+        for pair in cookie.split(';'):
+            pair = pair.strip()
+            if '=' not in pair:
+                continue
+            name, _, value = pair.partition('=')
+            if not name:
+                continue
+            lname = name.lower()
+            if lname in seen or lname in ('path', 'domain', 'expires', 'samesite', 'max-age', 'httponly', 'secure'):
+                continue
+            seen.add(lname)
+            secure = 'TRUE' if lname.startswith('__secure') or lname.startswith('__host') else 'FALSE'
+            lines.append(f"youtube.com\tFALSE\t/\t{secure}\t4102444800\t{name}\t{value}")
+        with open(str(cookies_file), 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
 
     def _activate_session(self):
         try:
